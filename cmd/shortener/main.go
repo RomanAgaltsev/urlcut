@@ -27,7 +27,6 @@ func basicHandler(w http.ResponseWriter, r *http.Request) {
 
 func postHandler(w http.ResponseWriter, r *http.Request) {
 	url, _ = io.ReadAll(r.Body)
-	//r.Body.Close()
 	w.Header().Set("Content-Type", "text/plain")
 	w.Header().Set("Content-Length", strconv.Itoa(len(urlShrt)))
 	w.WriteHeader(http.StatusCreated)
