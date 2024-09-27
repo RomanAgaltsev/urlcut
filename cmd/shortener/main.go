@@ -8,38 +8,53 @@ import (
 )
 
 const (
-	srvAddr string = ":8080"
-	urlShrt string = "http://localhost:8080/EwHXdJfB"
+	serverAddr   string = ":8080"                          // Адрес сервера, пока, храним в константе
+	shortenedURL string = "http://localhost:8080/EwHXdJfB" // Всегда возвращаем один и тот же URL - это временно
 )
 
-var url []byte
+var url []byte // Переменная-хранилище, в которой хранится полученный URL
 
-func basicHandler(w http.ResponseWriter, r *http.Request) {
-	switch {
-	case r.Method == http.MethodPost && r.URL.Path == "/":
-		postHandler(w, r)
-	case r.Method == http.MethodGet && r.URL.Path != "/":
-		getHandler(w, r)
-	default:
+// shortenHandler - хендлер для обработки запроса на сокращение URL
+func shortenHandler(w http.ResponseWriter, r *http.Request) {
+	// Проверяем метод запроса - принимаем только POST
+	if r.Method != http.MethodPost {
+		// Это не POST запрос, возвращаем статус 400
 		http.Error(w, "Некорректный запрос", http.StatusBadRequest)
+		return
 	}
-}
-
-func postHandler(w http.ResponseWriter, r *http.Request) {
+	// Получаем URL из тела запроса
 	url, _ = io.ReadAll(r.Body)
+	// Откладываем закрытие тела запроса
+	defer r.Body.Close()
+	// Пишем заголовки в ответ
 	w.Header().Set("Content-Type", "text/plain")
-	w.Header().Set("Content-Length", strconv.Itoa(len(urlShrt)))
+	w.Header().Set("Content-Length", strconv.Itoa(len(shortenedURL)))
+	// Пишем статус 201 в ответ
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(urlShrt))
+	// Пишем сокращенный URL в ответ
+	w.Write([]byte(shortenedURL))
 }
 
-func getHandler(w http.ResponseWriter, r *http.Request) {
+// expandHandler - хендлер для обработки запроса на возврат сходного URL
+func expandHandler(w http.ResponseWriter, r *http.Request) {
+	// Проверяем метод запроса - принимаем только GET
+	if r.Method != http.MethodGet {
+		// Это не GET запрос, возвращаем статус 400
+		http.Error(w, "Некорректный запрос", http.StatusBadRequest)
+		return
+	}
+	// Пишем заголовки в ответ
 	w.Header().Set("Location", string(url))
+	// Пишем статус 307 в ответ
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 func main() {
+	// Создаем собственный обработчик/мультиплексор
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", basicHandler)
-	log.Fatal(http.ListenAndServe(srvAddr, mux))
+	// Добавляем хендлеры
+	mux.HandleFunc("/", shortenHandler)    // Запрос на сокращение URL
+	mux.HandleFunc("/{id}", expandHandler) // Запрос на возврат исходного URL
+	// Запускаем сервер
+	log.Fatal(http.ListenAndServe(serverAddr, mux))
 }
