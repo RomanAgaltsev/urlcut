@@ -19,7 +19,7 @@ func shortenHandler(w http.ResponseWriter, r *http.Request) {
 	// Проверяем метод запроса - принимаем только POST
 	if r.Method != http.MethodPost {
 		// Это не POST запрос, возвращаем статус 400
-		http.Error(w, "Некорректный запрос", http.StatusBadRequest)
+		badRequestHandler(w)
 		return
 	}
 	// Получаем URL из тела запроса
@@ -40,13 +40,20 @@ func expandHandler(w http.ResponseWriter, r *http.Request) {
 	// Проверяем метод запроса - принимаем только GET
 	if r.Method != http.MethodGet {
 		// Это не GET запрос, возвращаем статус 400
-		http.Error(w, "Некорректный запрос", http.StatusBadRequest)
+		badRequestHandler(w)
 		return
 	}
 	// Пишем заголовки в ответ
 	w.Header().Set("Location", string(url))
 	// Пишем статус 307 в ответ
 	w.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func badRequestHandler(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Length", strconv.Itoa(len("Bad request")))
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write([]byte("Bad request"))
 }
 
 func main() {
