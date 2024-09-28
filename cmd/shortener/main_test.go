@@ -15,11 +15,10 @@ import (
 func assertEqualBadRequest(t *testing.T, actual *http.Response) {
 	// Структура ожидаемого ответа
 	expected := struct {
-		statusCode    int    // Код статуса ответа
 		contentType   string // Заголовок "Content-Type"
 		contentLength int    // Заголовок "Content-Length"
 		body          string // Тело ответа
-	}{http.StatusBadRequest, "text/plain", 11, "Bad request"}
+	}{"text/plain", 11, "Bad request"}
 
 	// Считываем тело ответа
 	defer actual.Body.Close()
@@ -28,7 +27,7 @@ func assertEqualBadRequest(t *testing.T, actual *http.Response) {
 	require.NoError(t, err)
 
 	// Рассчитываем длину ответа для проверки
-	contentLength, err := strconv.Atoi(actual.Header.Get("Content-Length"))
+	contentLength, _ := strconv.Atoi(actual.Header.Get("Content-Length"))
 
 	// Проверяем заголовок "Content-Type"
 	assert.Equal(t, expected.contentType, actual.Header.Get("Content-Type"))
