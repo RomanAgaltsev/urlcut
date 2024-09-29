@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 const (
@@ -108,11 +110,13 @@ func badRequestHandler(w http.ResponseWriter) {
 }
 
 func main() {
-	// Создаем собственный обработчик/мультиплексор
-	mux := http.NewServeMux()
+	// Создаем новый роутер
+	r := chi.NewRouter()
+
 	// Добавляем хендлеры
-	mux.HandleFunc("/", shortenHandler)    // Запрос на сокращение URL
-	mux.HandleFunc("/{id}", expandHandler) // Запрос на возврат исходного URL
+	r.Post("/", shortenHandler)   // Запрос на сокращение URL - POST
+	r.Get("/{id}", expandHandler) // Запрос на возврат исходного URL - GET
+
 	// Запускаем сервер
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
