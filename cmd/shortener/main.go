@@ -8,11 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-chi/chi/v5"
-)
+	"github.com/RomanAgaltsev/urlcut/internal/config"
 
-const (
-	serverAddr string = "http://localhost:8080" // Адрес сервера, пока, храним в константе
+	"github.com/go-chi/chi/v5"
 )
 
 var urls map[string]string // Переменная-хранилище, в которой хранится полученный URL
@@ -25,11 +23,12 @@ func init() {
 // urlID - возвращает идентификатор сокращенного URL
 func urlID() string {
 	const (
-		length      = 8                                                                // Длина идентификатора
-		letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" // Символы, которые могут входить в идентификатор
+		// Символы, которые могут входить в идентификатор
+		letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	)
 	// Инициируем слайс байт с длиной, равной длине идентификатора
-	b := make([]byte, length)
+	//b := make([]byte, length)
+	b := make([]byte, config.Config.IDlength)
 	// Заполняем слайс произвольными символами из доступных
 	for i := range b {
 		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
@@ -45,7 +44,7 @@ func shortenURL(url string) string {
 	// Сохраняем пару идентификатор-URL
 	urls[id] = url
 	// Возвращаем сокращенный URL, включая адрес сервера
-	return serverAddr + "/" + id
+	return config.Config.BasicAddr + "/" + id
 }
 
 // expandURL - Возвращает оригинальный URL по переданному идентификатору
@@ -110,6 +109,8 @@ func badRequestHandler(w http.ResponseWriter) {
 }
 
 func main() {
+	config.ParseFlags()
+
 	// Создаем новый роутер
 	r := chi.NewRouter()
 
@@ -118,5 +119,5 @@ func main() {
 	r.Get("/{id}", expandHandler) // Запрос на возврат исходного URL - GET
 
 	// Запускаем сервер
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Fatal(http.ListenAndServe(config.Config.ServerAddr, r))
 }

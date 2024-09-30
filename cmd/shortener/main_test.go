@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -10,6 +12,19 @@ import (
 	"strings"
 	"testing"
 )
+
+// initConfig - инициирует значения конфигурации
+func initConfig() {
+	if config.Config.ServerAddr == "" {
+		config.Config.ServerAddr = *flag.String("a", "localhost:8080", "address and port to run server")
+	}
+	if config.Config.BasicAddr == "" {
+		config.Config.BasicAddr = *flag.String("b", "http://localhost:8080", "basic address of shortened URL")
+	}
+	if config.Config.IDlength == 0 {
+		config.Config.IDlength = *flag.Int("l", 8, "URL ID default length")
+	}
+}
 
 // assertEqualBadRequest - проверяет корректность полученного ответа со статусом 400
 func assertEqualBadRequest(t *testing.T, actual *http.Response) {
@@ -38,12 +53,16 @@ func assertEqualBadRequest(t *testing.T, actual *http.Response) {
 }
 
 func TestShortenHandler(t *testing.T) {
+	// Инициируем флаги, т.к. main в тестах не вызывается
+	initConfig()
+
 	// Структура отправляемого запроса
 	type request struct {
 		method      string // Метод запроса
 		contentType string // Заголовок "Content-Type"
 		body        string // Тело запроса
 	}
+	// Структура получаемого ответа
 	type response struct {
 		statusCode    int    // Код статус ответа
 		contentType   string // Заголовок "Content-Type"
@@ -126,11 +145,16 @@ func TestShortenHandler(t *testing.T) {
 }
 
 func TestExpandHandler(t *testing.T) {
+	// Инициируем флаги, т.к. main в тестах не вызывается
+	initConfig()
+
+	// Структура отправляемого запроса
 	type request struct {
 		method      string // Метод запроса
 		url         string // URL для сокращения
 		contentType string // Заголовок "Content-Type"
 	}
+	// Структура получаемого ответа
 	type response struct {
 		statusCode int    // Код статус ответа
 		header     string // Имя заголовка для проверки (Location)
@@ -183,7 +207,7 @@ func TestExpandHandler(t *testing.T) {
 			// Получаем сокращенный URL из тела ответа
 			shortenedURL := string(resPostBody)
 			// Получаем идентификатор сокращенного URL
-			urlID := strings.TrimPrefix(shortenedURL, serverAddr+"/")
+			urlID := strings.TrimPrefix(shortenedURL, config.Config.BasicAddr+"/")
 
 			// Создаем новый запрос на получение оригинального URL по идентификатору сокращенного
 			req := httptest.NewRequest(test.req.method, "/"+urlID, nil)
