@@ -2,13 +2,14 @@ package config
 
 import (
 	"flag"
-	"os"
+	"fmt"
+	"github.com/caarlos0/env/v6"
 )
 
 // Cfg - структура для хранения конфигурации
 type Cfg struct {
-	ServerAddr string // Адрес HTTP-сервера
-	BasicAddr  string // Базовый адрес результирующего сокращённого URL
+	ServerAddr string `env:"SERVER_ADDRESS" envDefault:"localhost:8080"`  // Адрес HTTP-сервера
+	BasicAddr  string `env:"BASE_URL" envDefault:"http://localhost:8080"` // Базовый адрес результирующего сокращённого URL
 	IDlength   int    // Длина идентификатора сокращенного URL
 }
 
@@ -20,17 +21,12 @@ func ParseFlags() {
 	// Создаем структуру
 	Config = Cfg{}
 
-	// Устанавливам соответствие полей структуры и переменных окружения/флагов
-	if serverAddr := os.Getenv("SERVER_ADDRESS"); serverAddr != "" {
-		Config.ServerAddr = serverAddr
-	} else {
-		flag.StringVar(&Config.ServerAddr, "a", "localhost:8080", "address and port to run server")
+	if err := env.Parse(&Config); err != nil {
+		fmt.Printf("Error parsing environment variables: %+v\n", err)
 	}
-	if basicAddr := os.Getenv("BASE_URL"); basicAddr != "" {
-		Config.BasicAddr = basicAddr
-	} else {
-		flag.StringVar(&Config.BasicAddr, "b", "http://localhost:8080", "basic address of shortened URL")
-	}
+
+	flag.StringVar(&Config.ServerAddr, "a", Config.ServerAddr, "address and port to run server")
+	flag.StringVar(&Config.BasicAddr, "b", Config.BasicAddr, "basic address of shortened URL")
 	flag.IntVar(&Config.IDlength, "l", 8, "URL ID default length")
 
 	// Парсим флаги
