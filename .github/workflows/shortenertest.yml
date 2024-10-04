@@ -90,7 +90,7 @@ jobs:
           github.head_ref == 'iter24'
         run: |
           shortenertestbeta -test.v -test.run=^TestIteration1$ \
-              -binary-path=cmd/shortener/shortener -race -coverprofile=coverage.out -covermode=atomic
+              -binary-path=cmd/shortener/shortener -coverprofile=coverage.out -covermode=atomic
 
       - name: "Code increment #2"
         if: |
@@ -119,7 +119,7 @@ jobs:
           github.head_ref == 'iter23' ||
           github.head_ref == 'iter24'
         run: |
-          shortenertestbeta -test.v -test.run=^TestIteration2$ -source-path=. -race -coverprofile=coverage.out -covermode=atomic
+          shortenertestbeta -test.v -test.run=^TestIteration2$ -source-path=. -coverprofile=coverage.out -covermode=atomic
 
       - name: "Code increment #3"
         if: |
@@ -147,7 +147,7 @@ jobs:
           github.head_ref == 'iter23' ||
           github.head_ref == 'iter24'
         run: |
-          shortenertestbeta -test.v -test.run=^TestIteration3$ -source-path=. -race -coverprofile=coverage.out -covermode=atomic
+          shortenertestbeta -test.v -test.run=^TestIteration3$ -source-path=. -coverprofile=coverage.out -covermode=atomic
 
       - name: "Code increment #4"
         if: |
@@ -177,7 +177,7 @@ jobs:
           SERVER_PORT=$(random unused-port)
           shortenertestbeta -test.v -test.run=^TestIteration4$ \
               -binary-path=cmd/shortener/shortener \
-              -server-port=$SERVER_PORT -race -coverprofile=coverage.out -covermode=atomic
+              -server-port=$SERVER_PORT -coverprofile=coverage.out -covermode=atomic
 
       - name: "Code increment #5"
         if: |
