@@ -45,7 +45,7 @@ func (cb *configBuilder) setFlags() error {
 // setEnvs - устанавливает параметры конфигурации из переменных окружения
 func (cb *configBuilder) setEnvs() error {
     if err := env.Parse(cb); err != nil {
-        return fmt.Errorf("Error parsing environment variables: %+v\n", err)
+        return fmt.Errorf("error parsing environment variables: %+v", err)
     }
     return nil
 }
