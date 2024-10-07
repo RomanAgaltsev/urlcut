@@ -4,8 +4,8 @@ import "errors"
 
 // Repository - интерфейс хранилища сокращенных URL
 type Repository interface {
-    Store(string, string) error
-    Get(string) (string, error)
+    Store(id string, url string) error
+    GetUrl(id string) (string, error)
 }
 
 // MapRepository - хранилище-мапа
@@ -19,8 +19,8 @@ func (r *MapRepository) Store(id string, url string) error {
     return nil
 }
 
-// Get - возвращает из хранилища URL по его ID
-func (r *MapRepository) Get(id string) (string, error) {
+// GetUrl - возвращает из хранилища URL по его ID
+func (r *MapRepository) GetUrl(id string) (string, error) {
     if url, ok := r.m[id]; ok {
         return url, nil
     }
