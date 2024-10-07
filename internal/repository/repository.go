@@ -27,8 +27,8 @@ func (r *MapRepository) Get(id string) (string, error) {
     return "", errors.New("URL ID was not found in repository")
 }
 
-// NewMap - конструктор хранилища-мапы
-func NewMap() *MapRepository {
+// New - конструктор хранилища-мапы
+func New() *MapRepository {
     return &MapRepository{
         m: make(map[string]string),
     }

@@ -10,7 +10,7 @@ import (
 // Run - запускает приложение
 func Run(cfg *config.Config) {
     // Создаем новое хранилище-мапу
-    mapRepository := repository.NewMap()
+    mapRepository := repository.New()
     // Создаем новый сервис сокращения URL
     shortenerService := service.NewShortener(mapRepository, cfg)
     // Создаем новый HTTP-сервер
