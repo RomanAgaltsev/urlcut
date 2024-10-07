@@ -50,7 +50,7 @@ func (s *ShortenerService) ShortenURL(url string) (string, error) {
         return "", err
     }
     // Возвращаем сокращенный URL без ошибки
-    return s.baseURL + "/" + id, nil
+    return fmt.Sprintf("%s/%s", s.baseURL, id), nil
 }
 
 // ExpandURL - вовзращает оригинальный URL по переданному ID
