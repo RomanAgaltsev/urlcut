@@ -1,6 +1,10 @@
 package repository
 
-import "errors"
+import (
+    "fmt"
+)
+
+var ErrIDNotFound = fmt.Errorf("URL ID was not found in repository")
 
 // New - конструктор хранилища-мапы
 func New() *MapRepository {
@@ -31,5 +35,5 @@ func (r *MapRepository) GetUrl(id string) (string, error) {
     if url, ok := r.m[id]; ok {
         return url, nil
     }
-    return "", errors.New("URL ID was not found in repository")
+    return "", ErrIDNotFound
 }

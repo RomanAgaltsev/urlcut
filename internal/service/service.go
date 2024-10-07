@@ -2,6 +2,7 @@ package service
 
 import (
     "fmt"
+    "errors"
     "math/rand"
 
     "github.com/RomanAgaltsev/urlcut/internal/config"
@@ -59,9 +60,7 @@ func (s *ShortenerService) ExpandURL(id string) (string, error) {
     url, err := s.repo.GetUrl(id)
     // Проверяем наличие ошибки
     if err != nil {
-        return "", &NotFoundError{
-            id: id,
-        }
+        return "", fmt.Errorf("expanding URL failed: %w", err)
     }
     // Возвращаем оригинальный URL
     return url, nil
