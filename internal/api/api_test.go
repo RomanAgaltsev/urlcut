@@ -92,7 +92,7 @@ func TestShortenHandler(t *testing.T) {
     }
 
     // Чтобы добраться до хендлеров, создаем репо и сервис
-    mapRepository := repository.NewMap()
+    mapRepository := repository.New()
     shortenerService := service.NewShortener(mapRepository, cfg)
     handler := NewHandler(shortenerService, cfg)
 
@@ -174,7 +174,7 @@ func TestExpandHandler(t *testing.T) {
     }
 
     // Чтобы добраться до хендлеров, создаем репо и сервис
-    mapRepository := repository.NewMap()
+    mapRepository := repository.New()
     shortenerService := service.NewShortener(mapRepository, cfg)
     handler := NewHandler(shortenerService, cfg)
 
