@@ -16,7 +16,7 @@ func New() *MapRepository {
 // Repository - интерфейс хранилища сокращенных URL
 type Repository interface {
     Store(id string, url string) error
-    GetUrl(id string) (string, error)
+    GetURL(id string) (string, error)
 }
 
 // MapRepository - хранилище-мапа
@@ -30,8 +30,8 @@ func (r *MapRepository) Store(id string, url string) error {
     return nil
 }
 
-// GetUrl - возвращает из хранилища URL по его ID
-func (r *MapRepository) GetUrl(id string) (string, error) {
+// GetURL - возвращает из хранилища URL по его ID
+func (r *MapRepository) GetURL(id string) (string, error) {
     if url, ok := r.m[id]; ok {
         return url, nil
     }

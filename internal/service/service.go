@@ -56,7 +56,7 @@ func (s *ShortenerService) ShortenURL(url string) (string, error) {
 // ExpandURL - вовзращает оригинальный URL по переданному ID
 func (s *ShortenerService) ExpandURL(id string) (string, error) {
     // Получаем оригинальный URL из хранилища по ID
-    url, err := s.repo.GetUrl(id)
+    url, err := s.repo.GetURL(id)
     // Проверяем наличие ошибки
     if err != nil {
         return "", fmt.Errorf("expanding URL failed: %w", err)
