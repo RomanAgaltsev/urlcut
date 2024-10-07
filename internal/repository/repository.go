@@ -2,6 +2,13 @@ package repository
 
 import "errors"
 
+// New - конструктор хранилища-мапы
+func New() *MapRepository {
+    return &MapRepository{
+        m: make(map[string]string),
+    }
+}
+
 // Repository - интерфейс хранилища сокращенных URL
 type Repository interface {
     Store(id string, url string) error
@@ -25,11 +32,4 @@ func (r *MapRepository) GetUrl(id string) (string, error) {
         return url, nil
     }
     return "", errors.New("URL ID was not found in repository")
-}
-
-// New - конструктор хранилища-мапы
-func New() *MapRepository {
-    return &MapRepository{
-        m: make(map[string]string),
-    }
 }
