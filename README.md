@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/RomanAgaltsev/urlcut/graph/badge.svg?token=QCM8F0QPAZ)](https://codecov.io/gh/RomanAgaltsev/urlcut)
+
 # Сервис сокращения URL
 
 Учебный проект трека "Сервис сокращения URL" курса "Продвинутый Go-разработчик" в Яндекс Практикуме.
