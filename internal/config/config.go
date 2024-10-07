@@ -52,7 +52,7 @@ func (cb *configBuilder) setEnvs() error {
 }
 
 // getConfig - возвращает заполненную структуру конфигурации
-func (cb *configBuilder) getConfig() *Config {
+func (cb *configBuilder) build() *Config {
     return &Config{
         ServerPort: cb.serverPort,
         BaseURL:    cb.baseURL,
@@ -79,5 +79,5 @@ func Get() (*Config, error) {
         return nil, err
     }
 
-    return cb.getConfig(), nil
+    return cb.build(), nil
 }
