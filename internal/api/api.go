@@ -41,7 +41,7 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
     // Проверяем метод запроса - принимаем только POST
     if r.Method != http.MethodPost {
         // Это не POST запрос, возвращаем статус 400
-        badRequestHandler(w)
+        w.WriteHeader(http.StatusBadRequest)
         return
     }
     // Получаем URL из тела запроса
@@ -51,7 +51,7 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
     // Проверяем, передали ли URL
     if len(url) == 0 {
         // URL не передали, возвращаем статус 400
-        badRequestHandler(w)
+        w.WriteHeader(http.StatusBadRequest)
         return
     }
     // Формируем сокращенный URL
@@ -76,7 +76,7 @@ func (h *Handler) ExpandURL(w http.ResponseWriter, r *http.Request) {
     // Проверяем метод запроса - принимаем только GET
     if r.Method != http.MethodGet {
         // Это не GET запрос, возвращаем статус 400
-        badRequestHandler(w)
+        w.WriteHeader(http.StatusBadRequest)
         return
     }
     // Удалем префикс из полученного идентификатора
@@ -95,15 +95,4 @@ func (h *Handler) ExpandURL(w http.ResponseWriter, r *http.Request) {
 // Run - Запускает HTTP-сервер
 func (h *Handler) Run() {
     log.Fatal(http.ListenAndServe(h.serverPort, h.router))
-}
-
-// badRequestHandler - универсальный обработчик для возврата статуса 400
-func badRequestHandler(w http.ResponseWriter) {
-    w.Header().Set("Content-Type", "text/plain")
-    w.Header().Set("Content-Length", strconv.Itoa(len("Bad request")))
-    w.WriteHeader(http.StatusBadRequest)
-    _, err := w.Write([]byte("Bad request"))
-    if err != nil {
-        log.Printf("writing 'bad request' failed: %v", err)
-    }
 }
