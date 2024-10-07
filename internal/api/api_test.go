@@ -1,17 +1,18 @@
 package api
 
 import (
-    "github.com/RomanAgaltsev/urlcut/internal/config"
-    "github.com/RomanAgaltsev/urlcut/internal/repository"
-    "github.com/RomanAgaltsev/urlcut/internal/service"
-    "github.com/stretchr/testify/assert"
-    "github.com/stretchr/testify/require"
     "io"
     "net/http"
     "net/http/httptest"
     "strconv"
     "strings"
     "testing"
+
+    "github.com/RomanAgaltsev/urlcut/internal/config"
+    "github.com/RomanAgaltsev/urlcut/internal/repository"
+    "github.com/RomanAgaltsev/urlcut/internal/service"
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/require"
 )
 
 // assertEqualBadRequest - проверяет корректность полученного ответа со статусом 400

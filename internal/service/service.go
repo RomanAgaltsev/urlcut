@@ -2,9 +2,10 @@ package service
 
 import (
     "fmt"
+    "math/rand"
+
     "github.com/RomanAgaltsev/urlcut/internal/config"
     "github.com/RomanAgaltsev/urlcut/internal/repository"
-    "math/rand"
 )
 
 type NotFoundError struct {

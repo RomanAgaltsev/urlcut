@@ -1,14 +1,15 @@
 package api
 
 import (
-    "github.com/RomanAgaltsev/urlcut/internal/config"
-    "github.com/RomanAgaltsev/urlcut/internal/service"
-    "github.com/go-chi/chi/v5"
     "io"
     "log"
     "net/http"
     "strconv"
     "strings"
+
+    "github.com/RomanAgaltsev/urlcut/internal/config"
+    "github.com/RomanAgaltsev/urlcut/internal/service"
+    "github.com/go-chi/chi/v5"
 )
 
 // Handler - структура, которая реализует работу с запросами и ответами к серверу

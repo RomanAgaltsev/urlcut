@@ -1,9 +1,10 @@
 package main
 
 import (
+    "log"
+
     "github.com/RomanAgaltsev/urlcut/internal/app"
     "github.com/RomanAgaltsev/urlcut/internal/config"
-    "log"
 )
 
 func main() {
