@@ -2,7 +2,6 @@ package service
 
 import (
     "fmt"
-    "errors"
     "math/rand"
 
     "github.com/RomanAgaltsev/urlcut/internal/config"
