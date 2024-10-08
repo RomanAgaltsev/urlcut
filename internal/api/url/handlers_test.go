@@ -4,7 +4,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -16,73 +15,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// assertEqualBadRequest - проверяет корректность полученного ответа со статусом 400
-func assertEqualBadRequest(t *testing.T, actual *http.Response) {
-	// Структура ожидаемого ответа
-	expected := struct {
-		contentType   string // Заголовок "Content-Type"
-		contentLength int    // Заголовок "Content-Length"
-		body          string // Тело ответа
-	}{"text/plain", 11, "Bad request"}
-
-	// Считываем тело ответа
-	defer actual.Body.Close()
-	resBody, err := io.ReadAll(actual.Body)
-	// Проверяем отсутствие ошибок
-	require.NoError(t, err)
-
-	// Рассчитываем длину ответа для проверки
-	contentLength, _ := strconv.Atoi(actual.Header.Get("Content-Length"))
-
-	// Проверяем заголовок "Content-Type"
-	assert.Equal(t, expected.contentType, actual.Header.Get("Content-Type"))
-	// Проверяем длину ответа
-	assert.Equal(t, expected.contentLength, contentLength)
-	// Проверяем тело ответа
-	assert.Equal(t, expected.body, string(resBody))
-}
-
 func TestShortenHandler(t *testing.T) {
-	// Структура отправляемого запроса
-	type request struct {
-		method      string // Метод запроса
-		contentType string // Заголовок "Content-Type"
-		body        string // Тело запроса
-	}
-	// Структура получаемого ответа
-	type response struct {
-		statusCode    int    // Код статус ответа
-		contentType   string // Заголовок "Content-Type"
-		contentLength int    // Заголовок "Content-Length"
-		body          string // Тело ответа
-	}
-
-	// Тесты
 	tests := []struct {
-		name string
-		req  request
-		res  response
+		name      string
+		reqMethod string
+		reqURL    string
+		resStatus int
 	}{
-		{"[POST] [text/plain] [https://practicum.yandex.ru/]",
-			request{http.MethodPost, "text/plain", "https://practicum.yandex.ru/"},
-			response{http.StatusCreated, "text/plain", 30, ""},
-		},
-		{"[POST] [text/plain] [https://translate.yandex.ru/]",
-			request{http.MethodPost, "text/plain", "https://translate.yandex.ru/"},
-			response{http.StatusCreated, "text/plain", 30, ""},
-		},
-		//        {"[POST] [text/plain] ['']",
-		//            request{http.MethodPost, "text/plain", ""},
-		//            response{http.StatusBadRequest, "", 0, ""},
-		//        },
-		//        {"[GET] [text/plain] ['']",
-		//            request{http.MethodGet, "text/plain", ""},
-		//            response{http.StatusBadRequest, "", 0, ""},
-		//        },
-		//        {"[PUT] [text/plain] ['']",
-		//            request{http.MethodGet, "text/plain", ""},
-		//            response{http.StatusBadRequest, "", 0, ""},
-		//        },
+		{"[POST] [https://practicum.yandex.ru/]",
+			http.MethodPost, "https://practicum.yandex.ru/", http.StatusCreated},
+		{"[POST] [https://translate.yandex.ru/]",
+			http.MethodPost, "https://practicum.yandex.ru/", http.StatusCreated},
+		{"[POST] ['']",
+			http.MethodPost, "", http.StatusBadRequest},
+		{"[GET] ['']",
+			http.MethodGet, "", http.StatusBadRequest},
+		{"[PUT] ['']",
+			http.MethodPut, "", http.StatusBadRequest},
 	}
 
 	// Создаем структуру конфигурации
@@ -93,78 +42,63 @@ func TestShortenHandler(t *testing.T) {
 	}
 
 	// Чтобы добраться до хендлеров, создаем репо и сервис
-	mapRepository := repository.New()
-	shortenerService := servicesurl.NewShortener(mapRepository, cfg.BaseURL, cfg.IDlength)
-	handler := NewHandlers(shortenerService)
+	repo := repository.New()
+	service := servicesurl.NewShortener(repo, cfg.BaseURL, cfg.IDlength)
+	handlers := NewHandlers(service)
 
 	// Запуск тестов
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-
 			// Создаем новый запрос
-			req := httptest.NewRequest(test.req.method, "/", strings.NewReader(test.req.body))
+			req := httptest.NewRequest(test.reqMethod, "/", strings.NewReader(test.reqURL))
 			// Устанавливаем заголовок "Content-Type" запроса
-			req.Header.Set("Content-Type", test.req.contentType)
+			req.Header.Set("Content-Type", "text/plain")
 
 			// Создаем новый ResponseRecorder
 			w := httptest.NewRecorder()
 			// Вызваем хендлер запроса на сокращение URL
-			handler.ShortenURL(w, req)
+			handlers.ShortenURL(w, req)
 
 			// Получаем результат-ответ
 			res := w.Result()
 
 			// Проверяем статус ответа
-			assert.Equal(t, test.res.statusCode, res.StatusCode)
-			// Если код статуса ответа = 400, обрабатываем отдельно
-			if res.StatusCode == http.StatusBadRequest {
-				assertEqualBadRequest(t, res)
+			assert.Equal(t, test.resStatus, res.StatusCode)
+			if test.resStatus == http.StatusBadRequest {
 				return
 			}
 
-			// Получаем значение заголовка "Content-Length"
-			contentLength, _ := strconv.Atoi(res.Header.Get("Content-Length"))
-
 			// Проверяем заголовок "Content-Type"
-			assert.Equal(t, test.res.contentType, res.Header.Get("Content-Type"))
-			// Проверяем заголовок "Content-Length"
-			assert.Equal(t, test.res.contentLength, contentLength)
+			assert.Equal(t, "text/plain", res.Header.Get("Content-Type"))
+
+			// Откладываем закрытие тела ответа
+			defer res.Body.Close()
+			// Получаем тело ответа
+			resBody, err := io.ReadAll(res.Body)
+			// Проверяем отсутствие ошибок при чтении тела
+			require.NoError(t, err)
+
+			// Получаем сокращенный URL из тела ответа
+			shortenedURL := string(resBody)
+			// Проверяем префикс
+			assert.Equal(t, strings.HasPrefix(shortenedURL, cfg.BaseURL), true)
 		})
 	}
 }
 
 func TestExpandHandler(t *testing.T) {
-	// Структура отправляемого запроса
-	type request struct {
-		method      string // Метод запроса
-		url         string // URL для сокращения
-		contentType string // Заголовок "Content-Type"
-	}
-	// Структура получаемого ответа
-	type response struct {
-		statusCode int    // Код статус ответа
-		header     string // Имя заголовка для проверки (Location)
-		url        string // URL для проверки
-	}
-
-	// Тесты
 	tests := []struct {
-		name string
-		req  request
-		res  response
+		name      string
+		reqMethod string
+		reqURL    string
+		resStatus int
 	}{
-		{"[GET] [https://practicum.yandex.ru/] [text/plain]",
-			request{http.MethodGet, "https://practicum.yandex.ru/", "text/plain"},
-			response{http.StatusTemporaryRedirect, "Location", "https://practicum.yandex.ru/"},
-		},
-		{"[GET] [https://translate.yandex.ru/] [text/plain]",
-			request{http.MethodGet, "https://translate.yandex.ru/", "text/plain"},
-			response{http.StatusTemporaryRedirect, "Location", "https://translate.yandex.ru/"},
-		},
-		//        {"[POST] [https://translate.yandex.ru/] [text/plain]",
-		//            request{http.MethodPost, "https://translate.yandex.ru/", "text/plain"},
-		//            response{http.StatusBadRequest, "", ""},
-		//        },
+		{"[GET] [https://practicum.yandex.ru/]",
+			http.MethodGet, "https://practicum.yandex.ru/", http.StatusTemporaryRedirect},
+		{"[GET] [https://translate.yandex.ru/]",
+			http.MethodGet, "https://translate.yandex.ru/", http.StatusTemporaryRedirect},
+		{"[POST] [https://translate.yandex.ru/]",
+			http.MethodPost, "https://translate.yandex.ru/", http.StatusBadRequest},
 	}
 
 	// Создаем структуру конфигурации
@@ -175,22 +109,22 @@ func TestExpandHandler(t *testing.T) {
 	}
 
 	// Чтобы добраться до хендлеров, создаем репо и сервис
-	mapRepository := repository.New()
-	shortenerService := servicesurl.NewShortener(mapRepository, cfg.BaseURL, cfg.IDlength)
-	handler := NewHandlers(shortenerService)
+	repo := repository.New()
+	service := servicesurl.NewShortener(repo, cfg.BaseURL, cfg.IDlength)
+	handlers := NewHandlers(service)
 
 	// Запуск тестов
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Сначала создаем POST запрос на сокращение URL и получения идентификатора сокращенного URL
-			reqPost := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.req.url))
+			reqPost := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.reqURL))
 			// Устанавливаем заголовок "Content-Type" запроса
-			reqPost.Header.Set("Content-Type", test.req.contentType)
+			reqPost.Header.Set("Content-Type", "text/plain")
 
 			// Создаем новый ResponseRecorder
 			wPost := httptest.NewRecorder()
 			// Вызваем хендлер запроса на сокращение URL
-			handler.ShortenURL(wPost, reqPost)
+			handlers.ShortenURL(wPost, reqPost)
 
 			// Получаем результат-ответ
 			resPost := wPost.Result()
@@ -208,31 +142,101 @@ func TestExpandHandler(t *testing.T) {
 			urlID := strings.TrimPrefix(shortenedURL, cfg.BaseURL+"/")
 
 			// Создаем новый запрос на получение оригинального URL по идентификатору сокращенного
-			req := httptest.NewRequest(test.req.method, "/"+urlID, nil)
+			req := httptest.NewRequest(test.reqMethod, "/"+urlID, nil)
 			// Устанавливаем заголовок "Content-Type" запроса
-			req.Header.Set("Content-Type", test.req.contentType)
+			req.Header.Set("Content-Type", "text/plain")
 
 			// Создаем новый ResponseRecorder
 			w := httptest.NewRecorder()
 			// Вызываем хендлер запроса на получение оригинального URL
-			handler.ExpandURL(w, req)
+			handlers.ExpandURL(w, req)
 
 			// Получаем результат-ответ
 			res := w.Result()
 
 			// Проверяем статус ответа
-			assert.Equal(t, test.res.statusCode, res.StatusCode)
+			assert.Equal(t, test.resStatus, res.StatusCode)
 			// Если код статуса ответа = 400, обрабатываем отдельно
 			if res.StatusCode == http.StatusBadRequest {
-				assertEqualBadRequest(t, res)
 				return
 			}
 
 			// Проверяем, содержит ли ответ заголовок - Location
-			if assert.Contains(t, res.Header, test.res.header) {
+			if assert.Contains(t, res.Header, "Location") {
 				// Если заголовок есть, проверяем его содержимое - оригинальные URL
-				assert.Equal(t, test.res.url, res.Header.Get(test.res.header))
+				assert.Equal(t, test.reqURL, res.Header.Get("Location"))
 			}
 		})
 	}
 }
+
+//
+//	// Создаем структуру конфигурации
+//	cfg := &config.Config{
+//		ServerPort: "localhost:8080",
+//		BaseURL:    "http://localhost:8080",
+//		IDlength:   8,
+//	}
+//
+//	// Чтобы добраться до хендлеров, создаем репо и сервис
+//	mapRepository := repository.New()
+//	shortenerService := servicesurl.NewShortener(mapRepository, cfg.BaseURL, cfg.IDlength)
+//	handler := NewHandlers(shortenerService)
+//
+//	// Запуск тестов
+//	for _, test := range tests {
+//		t.Run(test.name, func(t *testing.T) {
+//			// Сначала создаем POST запрос на сокращение URL и получения идентификатора сокращенного URL
+//			reqPost := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.req.url))
+//			// Устанавливаем заголовок "Content-Type" запроса
+//			reqPost.Header.Set("Content-Type", test.req.contentType)
+//
+//			// Создаем новый ResponseRecorder
+//			wPost := httptest.NewRecorder()
+//			// Вызваем хендлер запроса на сокращение URL
+//			handler.ShortenURL(wPost, reqPost)
+//
+//			// Получаем результат-ответ
+//			resPost := wPost.Result()
+//
+//			// Откладываем закрытие тела ответа
+//			defer resPost.Body.Close()
+//			// Получаем тело ответа
+//			resPostBody, err := io.ReadAll(resPost.Body)
+//			// Проверяем отсутствие ошибок при чтении тела
+//			require.NoError(t, err)
+//
+//			// Получаем сокращенный URL из тела ответа
+//			shortenedURL := string(resPostBody)
+//			// Получаем идентификатор сокращенного URL
+//			urlID := strings.TrimPrefix(shortenedURL, cfg.BaseURL+"/")
+//
+//			// Создаем новый запрос на получение оригинального URL по идентификатору сокращенного
+//			req := httptest.NewRequest(test.req.method, "/"+urlID, nil)
+//			// Устанавливаем заголовок "Content-Type" запроса
+//			req.Header.Set("Content-Type", test.req.contentType)
+//
+//			// Создаем новый ResponseRecorder
+//			w := httptest.NewRecorder()
+//			// Вызываем хендлер запроса на получение оригинального URL
+//			handler.ExpandURL(w, req)
+//
+//			// Получаем результат-ответ
+//			res := w.Result()
+//
+//			// Проверяем статус ответа
+//			assert.Equal(t, test.res.statusCode, res.StatusCode)
+//			// Если код статуса ответа = 400, обрабатываем отдельно
+//			if res.StatusCode == http.StatusBadRequest {
+//				assertEqualBadRequest(t, res)
+//				return
+//			}
+//
+//			// Проверяем, содержит ли ответ заголовок - Location
+//			if assert.Contains(t, res.Header, test.res.header) {
+//				// Если заголовок есть, проверяем его содержимое - оригинальные URL
+//				assert.Equal(t, test.res.url, res.Header.Get(test.res.header))
+//			}
+//		})
+//	}
+//}
