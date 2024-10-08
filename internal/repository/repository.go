@@ -1,39 +1,39 @@
 package repository
 
 import (
-    "fmt"
+	"fmt"
 )
 
 var ErrIDNotFound = fmt.Errorf("URL ID was not found in repository")
 
 // New - конструктор хранилища-мапы
 func New() *MapRepository {
-    return &MapRepository{
-        m: make(map[string]string),
-    }
+	return &MapRepository{
+		m: make(map[string]string),
+	}
 }
 
 // Repository - интерфейс хранилища сокращенных URL
 type Repository interface {
-    Store(id string, url string) error
-    GetURL(id string) (string, error)
+	Store(id string, url string) error
+	GetURL(id string) (string, error)
 }
 
 // MapRepository - хранилище-мапа
 type MapRepository struct {
-    m map[string]string
+	m map[string]string
 }
 
 // Store - сохраняет пару ID/URL в хранилище-мапе
 func (r *MapRepository) Store(id string, url string) error {
-    r.m[id] = url
-    return nil
+	r.m[id] = url
+	return nil
 }
 
 // GetURL - возвращает из хранилища URL по его ID
 func (r *MapRepository) GetURL(id string) (string, error) {
-    if url, ok := r.m[id]; ok {
-        return url, nil
-    }
-    return "", ErrIDNotFound
+	if url, ok := r.m[id]; ok {
+		return url, nil
+	}
+	return "", ErrIDNotFound
 }
