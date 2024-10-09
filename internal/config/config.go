@@ -2,9 +2,7 @@ package config
 
 import (
 	"flag"
-	"fmt"
-
-	"github.com/caarlos0/env/v6"
+	"os"
 )
 
 // Config - структура для хранения конфигурации
@@ -45,8 +43,13 @@ func (cb *configBuilder) setFlags() error {
 
 // setEnvs - устанавливает параметры конфигурации из переменных окружения
 func (cb *configBuilder) setEnvs() error {
-	if err := env.Parse(cb); err != nil {
-		return fmt.Errorf("error parsing environment variables: %+v", err)
+	sp := os.Getenv("SERVER_ADDRESS")
+	if sp != "" {
+		cb.serverPort = sp
+	}
+	bu := os.Getenv("BASE_URL")
+	if bu != "" {
+		cb.baseURL = bu
 	}
 	return nil
 }

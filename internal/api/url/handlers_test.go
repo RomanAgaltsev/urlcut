@@ -153,6 +153,7 @@ func TestExpandHandler(t *testing.T) {
 
 			// Получаем результат-ответ
 			res := w.Result()
+			defer res.Body.Close()
 
 			// Проверяем статус ответа
 			assert.Equal(t, test.resStatus, res.StatusCode)

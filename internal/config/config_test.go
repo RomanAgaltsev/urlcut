@@ -29,7 +29,9 @@ func TestGet(t *testing.T) {
 		},
 
 		{"flags without envs",
-			map[string]string{},
+			map[string]string{
+				"SERVER_ADDRESS": "",
+				"BASE_URL":       ""},
 			[]string{
 				"-a", "localhost:8082",
 				"-b", "http://localhost:8082",
@@ -57,7 +59,8 @@ func TestGet(t *testing.T) {
 		},
 		{"envs and flags #1",
 			map[string]string{
-				"SERVER_ADDRESS": "localhost:8084"},
+				"SERVER_ADDRESS": "localhost:8084",
+				"BASE_URL":       ""},
 			[]string{
 				"-b", "http://localhost:8085"},
 			&Config{
@@ -68,7 +71,8 @@ func TestGet(t *testing.T) {
 		},
 		{"envs and flags #2",
 			map[string]string{
-				"BASE_URL": "http://localhost:8086"},
+				"SERVER_ADDRESS": "",
+				"BASE_URL":       "http://localhost:8086"},
 			[]string{
 				"-a", "localhost:8087",
 				"-l", "12"},
@@ -92,7 +96,8 @@ func TestGet(t *testing.T) {
 		},
 		{"envs and flags #4",
 			map[string]string{
-				"BASE_URL": "http://localhost:8090"},
+				"SERVER_ADDRESS": "",
+				"BASE_URL":       "http://localhost:8090"},
 			[]string{
 				"-a", "localhost:8091",
 				"-b", "http://localhost:8091",
@@ -107,26 +112,6 @@ func TestGet(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			//flag.ResetForTesting()
-
-			//			err := os.Setenv("SERVER_ADDRESS", test.envServerPort)
-			//			require.NoError(t, err)
-			//			err = os.Setenv("BASE_URL", test.envBaseURL)
-			//			require.NoError(t, err)
-			//			err = flag.Set("a", test.flagServerPort)
-			//			require.NoError(t, err)
-			//			err = flag.Set("b", test.flagBaseUrl)
-			//			require.NoError(t, err)
-			//			err = flag.Set("l", strconv.Itoa(test.flagIDlength))
-			//			require.NoError(t, err)
-			//
-			//			cfg, err := Get()
-			//
-			//			require.NoError(t, err)
-			//			assert.Equal(t, test.confServerPort, cfg.ServerPort)
-			//			assert.Equal(t, test.confBaseURL, cfg.BaseURL)
-			//			assert.Equal(t, test.confIDlength, cfg.IDlength)
-
 			defArgs := os.Args
 			defCL := flag.CommandLine
 
@@ -138,8 +123,7 @@ func TestGet(t *testing.T) {
 			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
 			for k, v := range test.envs {
-				os.Setenv(k, v)
-				defer os.Unsetenv(k)
+				t.Setenv(k, v)
 			}
 
 			os.Args = append([]string{"cmd"}, test.flags...)
