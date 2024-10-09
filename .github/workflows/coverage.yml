@@ -18,11 +18,3 @@ jobs:
               uses: codecov/codecov-action@v4
               env:
                   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-coverage:
-    status:
-        project:
-            default:
-                target: auto
-                threshold: 0%
-                base: auto
