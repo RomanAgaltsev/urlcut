@@ -8,8 +8,8 @@ import (
 )
 
 type Service interface {
-	ShortenURL(string) (string, error)
-	ExpandURL(string) (string, error)
+	ShortenURL(url string) (string, error)
+	ExpandURL(id string) (string, error)
 }
 
 // ShortenerService - структура сервиса сокращения URL

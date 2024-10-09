@@ -8,12 +8,12 @@ import (
 
 func main() {
 	// Создаем новое приложение
-	a, err := app.New()
+	application, err := app.New()
 	// Проверяем наличие ошибок
 	if err != nil {
 		// Есть ошибка, выводим
 		log.Fatalf("running shortener application failed: %s", err.Error())
 	}
 	// Запускаем приложение
-	a.Run()
+	application.Run()
 }
