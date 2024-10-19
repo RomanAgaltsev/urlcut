@@ -1,91 +1,73 @@
 package app
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
 	apiurl "github.com/RomanAgaltsev/urlcut/internal/api/url"
-	servicesurl "github.com/RomanAgaltsev/urlcut/internal/services/url"
+	repository "github.com/RomanAgaltsev/urlcut/internal/repository"
+	repositoryurl "github.com/RomanAgaltsev/urlcut/internal/repository/url"
+	services "github.com/RomanAgaltsev/urlcut/internal/service"
+	servicesurl "github.com/RomanAgaltsev/urlcut/internal/service/url"
 
 	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/logger"
-	"github.com/RomanAgaltsev/urlcut/internal/repository"
+
 	"github.com/go-chi/chi/v5"
 )
 
-// App - структура приложения
 type App struct {
-	repo    repository.Repository // Репозиторий URL
-	service servicesurl.Service   // Сервис сокращения URL
-	server  *http.Server          // HTTP-сервер
+	repo    repository.URLRepository
+	service services.URLService
+	server  *http.Server
 }
 
-// New - возвращает новый экземпляр приложения
-func New() (*App, error) {
-	// Получаем конфигурацию
+func New(_ context.Context) (*App, error) {
 	cfg, err := config.Get()
-	// Проверяем наличие ошибки
 	if err != nil {
-		// Есть ошибка, возвращаем nil и ошибку
-		return nil, fmt.Errorf("getting config failed: %v", err)
+		return nil, fmt.Errorf("failed to get config : %v", err)
 	}
-	// Инициализируем логер
 	err = logger.Initialize()
-	// Проверяем наличие ошибки
 	if err != nil {
-		// Есть ошибка, возвращаем nil и ошибку
 		return nil, err
 	}
-	// Создаем новое приложение
 	app := &App{}
-	// Получаем репозиторий
 	err = app.getRepository()
-	// Проверяем наличие ошибки
 	if err != nil {
-		// Есть ошибка, возвращаем nil и ошибку
 		return nil, err
 	}
-	// Получаем сервис
 	err = app.getService(cfg.BaseURL, cfg.IDlength)
-	// Проверяем наличие ошибки
 	if err != nil {
-		// Есть ошибка, возвращаем nil и ошибку
 		return nil, err
 	}
-	// Получаем HTTP-сервер
 	err = app.getHTTPServer(cfg.ServerPort)
-	// Проверяем наличие ошибки
 	if err != nil {
-		// Есть ошибка, возвращаем nil и ошибку
 		return nil, err
 	}
-	// Ошибок не было, возвращаем приложение
 	return app, nil
 }
 
-// getRepository - устанавливает репозиторий в приложении
 func (a *App) getRepository() error {
-	a.repo = repository.New()
+	a.repo = repositoryurl.New()
 	return nil
 }
 
-// getService - устанавливает сервис сокращения URL в приложении
 func (a *App) getService(baseURL string, idLength int) error {
 	a.service = servicesurl.NewShortener(a.repo, baseURL, idLength)
 	return nil
 }
 
-// getHTTPServer - устанавливает HTTP-сервер в приложении
 func (a *App) getHTTPServer(serverPort string) error {
-	// Получаем обработчики
 	handlers := apiurl.NewHandlers(a.service)
-	// Создаем новый роутер
 	router := chi.NewRouter()
-	// Добавляем хендлеры
-	router.Post("/", apiurl.WithLogging(handlers.ShortenURL))   // Запрос на сокращение URL - POST
-	router.Get("/{id}", apiurl.WithLogging(handlers.ExpandURL)) // Запрос на возврат исходного URL - GET
-	// Создаем новый HTTP-сервер
+	router.Post("/", apiurl.WithLogging(handlers.ShortenURL))
+	router.Get("/{id}", apiurl.WithLogging(handlers.ExpandURL))
 	a.server = &http.Server{
 		Addr:    serverPort,
 		Handler: router,
@@ -93,20 +75,45 @@ func (a *App) getHTTPServer(serverPort string) error {
 	return nil
 }
 
-// Run - запускает приложение
-func (a *App) Run() {
-	a.runShortenerApp()
+func (a *App) Run() error {
+	return a.runShortenerApp()
 }
 
-// runShortenerApp - запускает HTTP-сервер
-func (a *App) runShortenerApp() {
+func (a *App) runShortenerApp() error {
+	done := make(chan bool, 1)
+	quit := make(chan os.Signal, 1)
+
+	signal.Notify(quit, os.Interrupt)
+
+	go func() {
+		<-quit
+		slog.Info("shutting down HTTP server")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		if err := a.server.Shutdown(ctx); err != nil {
+			slog.Error(
+				"HTTP server shutdown error",
+				slog.String("error", err.Error()),
+			)
+		}
+		close(done)
+	}()
+
 	slog.Info(
-		"starting server",
+		"starting HTTP server",
 		"addr", a.server.Addr,
 	)
-	if err := a.server.ListenAndServe(); err != nil {
+	if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error(
-			"running HTTP server failed",
-			"error", err.Error())
+			"HTTP server error",
+			slog.String("error", err.Error()),
+		)
+		return err
 	}
+
+	<-done
+	slog.Info("HTTP server stopped")
+	return nil
 }
