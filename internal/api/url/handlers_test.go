@@ -60,7 +60,8 @@ func TestShortenHandler(t *testing.T) {
 			// Создаем новый ResponseRecorder
 			w := httptest.NewRecorder()
 			// Вызваем хендлер запроса на сокращение URL
-			handlers.ShortenURL(w, req)
+			h := WithLogging(handlers.ShortenURL)
+			h(w, req)
 
 			// Получаем результат-ответ
 			res := w.Result()
@@ -112,7 +113,7 @@ func TestExpandHandler(t *testing.T) {
 	}
 
 	_ = logger.Initialize()
-	
+
 	// Чтобы добраться до хендлеров, создаем репо и сервис
 	repo := repository.New()
 	service := servicesurl.NewShortener(repo, cfg.BaseURL, cfg.IDlength)
@@ -129,7 +130,8 @@ func TestExpandHandler(t *testing.T) {
 			// Создаем новый ResponseRecorder
 			wPost := httptest.NewRecorder()
 			// Вызваем хендлер запроса на сокращение URL
-			handlers.ShortenURL(wPost, reqPost)
+			hPost := WithLogging(handlers.ShortenURL)
+			hPost(wPost, reqPost)
 
 			// Получаем результат-ответ
 			resPost := wPost.Result()
@@ -154,7 +156,8 @@ func TestExpandHandler(t *testing.T) {
 			// Создаем новый ResponseRecorder
 			w := httptest.NewRecorder()
 			// Вызываем хендлер запроса на получение оригинального URL
-			handlers.ExpandURL(w, req)
+			h := WithLogging(handlers.ExpandURL)
+			h(w, req)
 
 			// Получаем результат-ответ
 			res := w.Result()
