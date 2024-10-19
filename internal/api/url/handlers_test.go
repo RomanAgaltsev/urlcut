@@ -72,7 +72,7 @@ func TestShortenHandler(t *testing.T) {
 			assert.Equal(t, "text/plain", res.Header.Get("Content-Type"))
 
 			// Откладываем закрытие тела ответа
-			defer res.Body.Close()
+			defer func() { _ = res.Body.Close() }()
 			// Получаем тело ответа
 			resBody, err := io.ReadAll(res.Body)
 			// Проверяем отсутствие ошибок при чтении тела
@@ -130,7 +130,7 @@ func TestExpandHandler(t *testing.T) {
 			resPost := wPost.Result()
 
 			// Откладываем закрытие тела ответа
-			defer resPost.Body.Close()
+			defer func() { _ = resPost.Body.Close() }()
 			// Получаем тело ответа
 			resPostBody, err := io.ReadAll(resPost.Body)
 			// Проверяем отсутствие ошибок при чтении тела
@@ -153,7 +153,7 @@ func TestExpandHandler(t *testing.T) {
 
 			// Получаем результат-ответ
 			res := w.Result()
-			defer res.Body.Close()
+			defer func() { _ = res.Body.Close() }()
 
 			// Проверяем статус ответа
 			assert.Equal(t, test.resStatus, res.StatusCode)

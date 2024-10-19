@@ -33,7 +33,7 @@ func (h *Handlers) ShortenURL(w http.ResponseWriter, r *http.Request) {
 	// Получаем URL из тела запроса
 	url, _ := io.ReadAll(r.Body)
 	// Откладываем закрытие тела запроса
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 	// Проверяем, передали ли URL
 	if len(url) == 0 {
 		// URL не передали, возвращаем статус 400
