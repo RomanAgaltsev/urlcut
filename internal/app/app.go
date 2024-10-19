@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"github.com/RomanAgaltsev/urlcut/internal/logger"
 	"log/slog"
 	"net/http"
 
@@ -10,6 +9,7 @@ import (
 	servicesurl "github.com/RomanAgaltsev/urlcut/internal/services/url"
 
 	"github.com/RomanAgaltsev/urlcut/internal/config"
+	"github.com/RomanAgaltsev/urlcut/internal/logger"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
 	"github.com/go-chi/chi/v5"
 )

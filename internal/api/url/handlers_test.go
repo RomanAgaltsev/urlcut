@@ -10,6 +10,7 @@ import (
 	servicesurl "github.com/RomanAgaltsev/urlcut/internal/services/url"
 
 	"github.com/RomanAgaltsev/urlcut/internal/config"
+	"github.com/RomanAgaltsev/urlcut/internal/logger"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,6 +41,8 @@ func TestShortenHandler(t *testing.T) {
 		BaseURL:    "http://localhost:8080",
 		IDlength:   8,
 	}
+
+	_ = logger.Initialize()
 
 	// Чтобы добраться до хендлеров, создаем репо и сервис
 	repo := repository.New()
