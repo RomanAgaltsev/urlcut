@@ -2,7 +2,8 @@ package app
 
 import (
 	"fmt"
-	"log"
+	"github.com/RomanAgaltsev/urlcut/internal/logger"
+	"log/slog"
 	"net/http"
 
 	apiurl "github.com/RomanAgaltsev/urlcut/internal/api/url"
@@ -28,6 +29,13 @@ func New() (*App, error) {
 	if err != nil {
 		// Есть ошибка, возвращаем nil и ошибку
 		return nil, fmt.Errorf("getting config failed: %v", err)
+	}
+	// Инициализируем логер
+	err = logger.Initialize()
+	// Проверяем наличие ошибки
+	if err != nil {
+		// Есть ошибка, возвращаем nil и ошибку
+		return nil, err
 	}
 	// Создаем новое приложение
 	app := &App{}
@@ -75,8 +83,8 @@ func (a *App) getHTTPServer(serverPort string) error {
 	// Создаем новый роутер
 	router := chi.NewRouter()
 	// Добавляем хендлеры
-	router.Post("/", handlers.ShortenURL)   // Запрос на сокращение URL - POST
-	router.Get("/{id}", handlers.ExpandURL) // Запрос на возврат исходного URL - GET
+	router.Post("/", apiurl.WithLogging(handlers.ShortenURL))   // Запрос на сокращение URL - POST
+	router.Get("/{id}", apiurl.WithLogging(handlers.ExpandURL)) // Запрос на возврат исходного URL - GET
 	// Создаем новый HTTP-сервер
 	a.server = &http.Server{
 		Addr:    serverPort,
@@ -92,7 +100,13 @@ func (a *App) Run() {
 
 // runShortenerApp - запускает HTTP-сервер
 func (a *App) runShortenerApp() {
+	slog.Info(
+		"starting server",
+		"addr", a.server.Addr,
+	)
 	if err := a.server.ListenAndServe(); err != nil {
-		log.Fatalf("running HTTP server failed: %s", err.Error())
+		slog.Error(
+			"running HTTP server failed",
+			"error", err.Error())
 	}
 }
