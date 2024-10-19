@@ -111,6 +111,8 @@ func TestExpandHandler(t *testing.T) {
 		IDlength:   8,
 	}
 
+	_ = logger.Initialize()
+	
 	// Чтобы добраться до хендлеров, создаем репо и сервис
 	repo := repository.New()
 	service := servicesurl.NewShortener(repo, cfg.BaseURL, cfg.IDlength)
