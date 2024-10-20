@@ -1,13 +1,15 @@
 package service
 
 import (
-	"context"
 	"fmt"
-	"math/rand"
 
+	"github.com/RomanAgaltsev/urlcut/internal/lib/random"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
+	"github.com/RomanAgaltsev/urlcut/internal/service"
 )
+
+var _ service.URLService = (*ShortenerService)(nil)
 
 type ShortenerService struct {
 	repo     repository.URLRepository
@@ -15,7 +17,7 @@ type ShortenerService struct {
 	idLenght int
 }
 
-func NewShortener(repo repository.URLRepository, baseURL string, idLength int) *ShortenerService {
+func New(repo repository.URLRepository, baseURL string, idLength int) *ShortenerService {
 	return &ShortenerService{
 		repo:     repo,
 		baseURL:  baseURL,
@@ -23,31 +25,26 @@ func NewShortener(repo repository.URLRepository, baseURL string, idLength int) *
 	}
 }
 
-func (s *ShortenerService) Shorten(ctx context.Context, longURL string) (*model.URL, error) {
+func (s *ShortenerService) Shorten(longURL string) (*model.URL, error) {
 	url := &model.URL{
-		LongURL: longURL,
-		ID:      urlID(s.idLenght),
+		Long: longURL,
+		Base: s.baseURL,
+		ID:   random.String(s.idLenght),
 	}
-	err := s.repo.Store(ctx, url)
+
+	err := s.repo.Store(url)
 	if err != nil {
 		return &model.URL{}, err
 	}
+
 	return url, nil
 }
 
-func (s *ShortenerService) Expand(ctx context.Context, id string) (*model.URL, error) {
-	url, err := s.repo.Get(ctx, id)
+func (s *ShortenerService) Expand(id string) (*model.URL, error) {
+	url, err := s.repo.Get(id)
 	if err != nil {
 		return &model.URL{}, fmt.Errorf("expanding URL failed: %w", err)
 	}
-	return url, nil
-}
 
-func urlID(lenght int) string {
-	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, lenght)
-	for i := range b {
-		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
-	}
-	return string(b)
+	return url, nil
 }

@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func (h *Handlers) ExpandURL(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -13,11 +13,11 @@ func (h *Handlers) ExpandURL(w http.ResponseWriter, r *http.Request) {
 
 	urlID := strings.TrimPrefix(r.URL.Path, "/")
 
-	expandedURL, err := h.service.ExpandURL(urlID)
+	url, err := h.service.Expand(urlID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	}
 
-	w.Header().Set("Location", expandedURL)
+	w.Header().Set("Location", url.Long)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }

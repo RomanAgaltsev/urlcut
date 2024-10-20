@@ -11,7 +11,7 @@ import (
 	"time"
 
 	apiurl "github.com/RomanAgaltsev/urlcut/internal/api/url"
-	repository "github.com/RomanAgaltsev/urlcut/internal/repository"
+	"github.com/RomanAgaltsev/urlcut/internal/repository"
 	repositoryurl "github.com/RomanAgaltsev/urlcut/internal/repository/url"
 	services "github.com/RomanAgaltsev/urlcut/internal/service"
 	servicesurl "github.com/RomanAgaltsev/urlcut/internal/service/url"
@@ -28,28 +28,33 @@ type App struct {
 	server  *http.Server
 }
 
-func New(_ context.Context) (*App, error) {
+func New() (*App, error) {
 	cfg, err := config.Get()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config : %v", err)
 	}
+
 	err = logger.Initialize()
 	if err != nil {
 		return nil, err
 	}
+
 	app := &App{}
 	err = app.getRepository()
 	if err != nil {
 		return nil, err
 	}
+
 	err = app.getService(cfg.BaseURL, cfg.IDlength)
 	if err != nil {
 		return nil, err
 	}
+
 	err = app.getHTTPServer(cfg.ServerPort)
 	if err != nil {
 		return nil, err
 	}
+
 	return app, nil
 }
 
@@ -59,15 +64,15 @@ func (a *App) getRepository() error {
 }
 
 func (a *App) getService(baseURL string, idLength int) error {
-	a.service = servicesurl.NewShortener(a.repo, baseURL, idLength)
+	a.service = servicesurl.New(a.repo, baseURL, idLength)
 	return nil
 }
 
 func (a *App) getHTTPServer(serverPort string) error {
-	handlers := apiurl.NewHandlers(a.service)
+	handlers := apiurl.New(a.service)
 	router := chi.NewRouter()
-	router.Post("/", apiurl.WithLogging(handlers.ShortenURL))
-	router.Get("/{id}", apiurl.WithLogging(handlers.ExpandURL))
+	router.Post("/", apiurl.WithLogging(handlers.Shorten))
+	router.Get("/{id}", apiurl.WithLogging(handlers.Expand))
 	a.server = &http.Server{
 		Addr:    serverPort,
 		Handler: router,

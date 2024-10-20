@@ -1,8 +1,8 @@
 package url
 
 import (
-	"context"
 	"fmt"
+	"sync"
 
 	"github.com/RomanAgaltsev/urlcut/internal/model"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
@@ -14,22 +14,31 @@ var ErrIDNotFound = fmt.Errorf("URL ID was not found in repository")
 
 func New() *InMemoryRepository {
 	return &InMemoryRepository{
-		m: make(map[string]string),
+		m: make(map[string]*model.URL),
 	}
 }
 
 type InMemoryRepository struct {
-	m map[string]string
+	m map[string]*model.URL
+	sync.RWMutex
 }
 
-func (r *InMemoryRepository) Store(_ context.Context, url *model.URL) error {
-	r.m[url.ID] = url.LongURL
+func (r *InMemoryRepository) Store(url *model.URL) error {
+	r.Lock()
+	defer r.Unlock()
+
+	r.m[url.ID] = url
+
 	return nil
 }
 
-func (r *InMemoryRepository) Get(_ context.Context, id string) (*model.URL, error) {
-	if longURL, ok := r.m[id]; ok {
-		return &model.URL{LongURL: longURL, ID: id}, nil
+func (r *InMemoryRepository) Get(id string) (*model.URL, error) {
+	r.Lock()
+	defer r.Unlock()
+
+	if url, ok := r.m[id]; ok {
+		return url, nil
+	} else {
+		return url, ErrIDNotFound
 	}
-	return &model.URL{}, ErrIDNotFound
 }

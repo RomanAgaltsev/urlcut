@@ -7,33 +7,34 @@ import (
 	"strconv"
 )
 
-func (h *Handlers) ShortenURL(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	url, _ := io.ReadAll(r.Body)
+	longURL, _ := io.ReadAll(r.Body)
 	defer func() { _ = r.Body.Close() }()
 
-	if len(url) == 0 {
+	if len(longURL) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	//return fmt.Sprintf("%s/%s", s.baseURL, id), nil
-	shortenedURL, err := h.service.ShortenURL(string(url))
+	url, err := h.service.Shorten(string(longURL))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	shortURL := url.Short()
+
 	w.Header().Set("Content-Type", "text/plain")
-	w.Header().Set("Content-Length", strconv.Itoa(len(shortenedURL)))
+	w.Header().Set("Content-Length", strconv.Itoa(len(shortURL)))
 	w.WriteHeader(http.StatusCreated)
 
-	_, err = w.Write([]byte(shortenedURL))
+	_, err = w.Write([]byte(shortURL))
 	if err != nil {
 		slog.Info(
 			"failed to write shorten URL to response",

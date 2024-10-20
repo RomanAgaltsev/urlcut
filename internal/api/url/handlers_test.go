@@ -7,11 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	servicesurl "github.com/RomanAgaltsev/urlcut/internal/services/url"
-
 	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/logger"
-	"github.com/RomanAgaltsev/urlcut/internal/repository"
+	repositoryurl "github.com/RomanAgaltsev/urlcut/internal/repository/url"
+	serviceurl "github.com/RomanAgaltsev/urlcut/internal/service/url"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -43,9 +42,9 @@ func TestShortenHandler(t *testing.T) {
 
 	_ = logger.Initialize()
 
-	repo := repository.New()
-	service := servicesurl.NewShortener(repo, cfg.BaseURL, cfg.IDlength)
-	handlers := NewHandlers(service)
+	repo := repositoryurl.New()
+	service := serviceurl.New(repo, cfg.BaseURL, cfg.IDlength)
+	handlers := New(service)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -53,7 +52,7 @@ func TestShortenHandler(t *testing.T) {
 			req.Header.Set("Content-Type", "text/plain")
 
 			w := httptest.NewRecorder()
-			h := WithLogging(handlers.ShortenURL)
+			h := WithLogging(handlers.Shorten)
 			h(w, req)
 
 			res := w.Result()
@@ -98,9 +97,9 @@ func TestExpandHandler(t *testing.T) {
 
 	_ = logger.Initialize()
 
-	repo := repository.New()
-	service := servicesurl.NewShortener(repo, cfg.BaseURL, cfg.IDlength)
-	handlers := NewHandlers(service)
+	repo := repositoryurl.New()
+	service := serviceurl.New(repo, cfg.BaseURL, cfg.IDlength)
+	handlers := New(service)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -108,7 +107,7 @@ func TestExpandHandler(t *testing.T) {
 			reqPost.Header.Set("Content-Type", "text/plain")
 
 			wPost := httptest.NewRecorder()
-			hPost := WithLogging(handlers.ShortenURL)
+			hPost := WithLogging(handlers.Shorten)
 			hPost(wPost, reqPost)
 
 			resPost := wPost.Result()
@@ -124,7 +123,7 @@ func TestExpandHandler(t *testing.T) {
 			req.Header.Set("Content-Type", "text/plain")
 
 			w := httptest.NewRecorder()
-			h := WithLogging(handlers.ExpandURL)
+			h := WithLogging(handlers.Expand)
 			h(w, req)
 
 			res := w.Result()

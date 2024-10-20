@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"time"
 
-	servicesurl "github.com/RomanAgaltsev/urlcut/internal/services/url"
+	"github.com/RomanAgaltsev/urlcut/internal/service"
 )
 
 type Handlers struct {
-	service servicesurl.Service
+	service service.URLService
 }
 
-func NewHandlers(service servicesurl.Service) *Handlers {
+func New(service service.URLService) *Handlers {
 	return &Handlers{
 		service: service,
 	}
@@ -31,6 +31,7 @@ type loggingResponseWriter struct {
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
 	r.responseData.size += size
+
 	return size, err
 }
 
@@ -47,6 +48,7 @@ func WithLogging(h http.HandlerFunc) http.HandlerFunc {
 			status: 0,
 			size:   0,
 		}
+
 		lw := loggingResponseWriter{
 			ResponseWriter: w,
 			responseData:   respData,
@@ -65,5 +67,6 @@ func WithLogging(h http.HandlerFunc) http.HandlerFunc {
 			slog.Int("size", respData.size),
 		)
 	}
+	
 	return logFn
 }

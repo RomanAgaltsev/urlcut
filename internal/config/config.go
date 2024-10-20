@@ -25,6 +25,7 @@ func (cb *configBuilder) setDefaults() error {
 	cb.serverPort = "localhost:8080"
 	cb.baseURL = "http://localhost:8080"
 	cb.idLength = 8
+
 	return nil
 }
 
@@ -33,6 +34,7 @@ func (cb *configBuilder) setFlags() error {
 	flag.StringVar(&cb.baseURL, "b", cb.baseURL, "basic address of shortened URL")
 	flag.IntVar(&cb.idLength, "l", cb.idLength, "URL ID default length")
 	flag.Parse()
+
 	return nil
 }
 
@@ -41,10 +43,12 @@ func (cb *configBuilder) setEnvs() error {
 	if sp != "" {
 		cb.serverPort = sp
 	}
+
 	bu := os.Getenv("BASE_URL")
 	if bu != "" {
 		cb.baseURL = bu
 	}
+
 	return nil
 }
 
@@ -59,19 +63,17 @@ func (cb *configBuilder) build() *Config {
 func Get() (*Config, error) {
 	cb := newConfigBuilder()
 
-	err := cb.setDefaults()
-	if err != nil {
-		return nil, err
+	confSets := []func() error{
+		cb.setDefaults,
+		cb.setFlags,
+		cb.setEnvs,
 	}
 
-	err = cb.setFlags()
-	if err != nil {
-		return nil, err
-	}
-
-	err = cb.setEnvs()
-	if err != nil {
-		return nil, err
+	for _, confSet := range confSets {
+		err := confSet()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return cb.build(), nil
