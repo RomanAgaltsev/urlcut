@@ -123,6 +123,7 @@ func TestShortenAPIHandler(t *testing.T) {
 			h(w, req)
 
 			res := w.Result()
+			defer func() { _ = res.Body.Close() }()
 
 			assert.Equal(t, test.resStatus, res.StatusCode)
 			if test.resStatus == http.StatusBadRequest {
