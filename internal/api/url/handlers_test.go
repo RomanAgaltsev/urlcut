@@ -141,6 +141,41 @@ func TestShortenAPIHandler(t *testing.T) {
 			assert.Equal(t, strings.HasPrefix(shortenedURL, cfg.BaseURL), true)
 		})
 	}
+
+	t.Run("[POST] [nil body]", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/api/shorten", nil)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		h := WithLogging(handlers.ShortenAPI)
+		h(w, req)
+
+		res := w.Result()
+		defer func() { _ = res.Body.Close() }()
+
+		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+	})
+
+	t.Run("[POST] [Bad body]", func(t *testing.T) {
+		request := struct {
+			Dummy string
+		}{
+			Dummy: "Hi there!",
+		}
+		reqBytes, _ := json.Marshal(request)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewReader(reqBytes))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		h := WithLogging(handlers.ShortenAPI)
+		h(w, req)
+
+		res := w.Result()
+		defer func() { _ = res.Body.Close() }()
+
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+	})
 }
 
 func TestExpandHandler(t *testing.T) {
