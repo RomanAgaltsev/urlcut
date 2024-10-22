@@ -1,6 +1,9 @@
 package url
 
 import (
+	"bytes"
+	"encoding/json"
+	"github.com/RomanAgaltsev/urlcut/internal/model"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -69,6 +72,71 @@ func TestShortenHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			shortenedURL := string(resBody)
+			assert.Equal(t, strings.HasPrefix(shortenedURL, cfg.BaseURL), true)
+		})
+	}
+}
+
+func TestShortenAPIHandler(t *testing.T) {
+	tests := []struct {
+		name      string
+		reqMethod string
+		reqURL    string
+		resStatus int
+	}{
+		{"[POST] [https://practicum.yandex.ru/]",
+			http.MethodPost, "https://practicum.yandex.ru/", http.StatusCreated},
+		{"[POST] [https://translate.yandex.ru/]",
+			http.MethodPost, "https://practicum.yandex.ru/", http.StatusCreated},
+		{"[POST] ['']",
+			http.MethodPost, "", http.StatusBadRequest},
+		{"[GET] ['']",
+			http.MethodGet, "", http.StatusBadRequest},
+		{"[PUT] ['']",
+			http.MethodPut, "", http.StatusBadRequest},
+	}
+
+	cfg := &config.Config{
+		ServerPort: "localhost:8080",
+		BaseURL:    "http://localhost:8080",
+		IDlength:   8,
+	}
+
+	_ = logger.Initialize()
+
+	repo := repositoryurl.New()
+	service := serviceurl.New(repo, cfg.BaseURL, cfg.IDlength)
+	handlers := New(service)
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := model.Request{
+				URL: test.reqURL,
+			}
+			reqBytes, _ := json.Marshal(request)
+
+			req := httptest.NewRequest(test.reqMethod, "/api/shorten", bytes.NewReader(reqBytes))
+			req.Header.Set("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			h := WithLogging(handlers.ShortenAPI)
+			h(w, req)
+
+			res := w.Result()
+
+			assert.Equal(t, test.resStatus, res.StatusCode)
+			if test.resStatus == http.StatusBadRequest {
+				return
+			}
+
+			assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
+
+			dec := json.NewDecoder(res.Body)
+			var response model.Response
+			err := dec.Decode(&response)
+			require.NoError(t, err)
+
+			shortenedURL := response.Result
 			assert.Equal(t, strings.HasPrefix(shortenedURL, cfg.BaseURL), true)
 		})
 	}
