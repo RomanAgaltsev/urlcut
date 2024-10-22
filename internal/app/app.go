@@ -72,6 +72,7 @@ func (a *App) getHTTPServer(serverPort string) error {
 	handlers := apiurl.New(a.service)
 	router := chi.NewRouter()
 	router.Post("/", apiurl.WithLogging(handlers.Shorten))
+	router.Post("/api/shorten", apiurl.WithLogging(handlers.ShortenAPI))
 	router.Get("/{id}", apiurl.WithLogging(handlers.Expand))
 	a.server = &http.Server{
 		Addr:    serverPort,
