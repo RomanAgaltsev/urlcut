@@ -20,6 +20,7 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/logger"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type App struct {
@@ -71,6 +72,7 @@ func (a *App) getService(baseURL string, idLength int) error {
 func (a *App) getHTTPServer(serverPort string) error {
 	handlers := apiurl.New(a.service)
 	router := chi.NewRouter()
+	router.Use(middleware.Compress(4))
 	router.Post("/", apiurl.WithLogging(handlers.Shorten))
 	router.Post("/api/shorten", apiurl.WithLogging(handlers.ShortenAPI))
 	router.Get("/{id}", apiurl.WithLogging(handlers.Expand))
