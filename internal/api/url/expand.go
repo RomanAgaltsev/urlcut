@@ -6,11 +6,6 @@ import (
 )
 
 func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	urlID := strings.TrimPrefix(r.URL.Path, "/")
 
 	url, err := h.service.Expand(urlID)

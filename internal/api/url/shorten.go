@@ -10,11 +10,6 @@ import (
 )
 
 func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	longURL, _ := io.ReadAll(r.Body)
 	defer func() { _ = r.Body.Close() }()
 
