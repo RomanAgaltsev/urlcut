@@ -10,48 +10,35 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/RomanAgaltsev/urlcut/internal/api/middleware"
 	apiurl "github.com/RomanAgaltsev/urlcut/internal/api/url"
+	"github.com/RomanAgaltsev/urlcut/internal/config"
+	"github.com/RomanAgaltsev/urlcut/internal/logger"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
 	repositoryurl "github.com/RomanAgaltsev/urlcut/internal/repository/url"
 	services "github.com/RomanAgaltsev/urlcut/internal/service"
 	servicesurl "github.com/RomanAgaltsev/urlcut/internal/service/url"
 
-	"github.com/RomanAgaltsev/urlcut/internal/config"
-	"github.com/RomanAgaltsev/urlcut/internal/logger"
-
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+)
+
+var (
+	ErrInitConfigFailed  = fmt.Errorf("failed to init config")
+	ErrInitServiceFailed = fmt.Errorf("failed to init service")
+	ErrInitServerFailed  = fmt.Errorf("failed to init HTTP server")
 )
 
 type App struct {
+	cfg     *config.Config
 	repo    repository.URLRepository
 	service services.URLService
 	server  *http.Server
 }
 
 func New() (*App, error) {
-	cfg, err := config.Get()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get config : %v", err)
-	}
-
-	err = logger.Initialize()
-	if err != nil {
-		return nil, err
-	}
-
 	app := &App{}
-	err = app.getRepository()
-	if err != nil {
-		return nil, err
-	}
 
-	err = app.getService(cfg.BaseURL, cfg.IDlength)
-	if err != nil {
-		return nil, err
-	}
-
-	err = app.getHTTPServer(cfg.ServerPort)
+	err := app.init()
 	if err != nil {
 		return nil, err
 	}
@@ -59,25 +46,75 @@ func New() (*App, error) {
 	return app, nil
 }
 
-func (a *App) getRepository() error {
+func (a *App) init() error {
+	appInits := []func() error{
+		a.initConfig,
+		a.initLogger,
+		a.initRepository,
+		a.initService,
+		a.initHTTPServer,
+	}
+
+	for _, appInit := range appInits {
+		err := appInit()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (a *App) initConfig() error {
+	cfg, err := config.Get()
+	if err != nil {
+		return ErrInitConfigFailed
+	}
+	a.cfg = cfg
+
+	return nil
+}
+
+func (a *App) initLogger() error {
+	err := logger.Initialize()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *App) initRepository() error {
 	a.repo = repositoryurl.New()
+
 	return nil
 }
 
-func (a *App) getService(baseURL string, idLength int) error {
-	a.service = servicesurl.New(a.repo, baseURL, idLength)
+func (a *App) initService() error {
+	if a.cfg.BaseURL == "" || a.cfg.IDlength == 0 {
+		return ErrInitServiceFailed
+	}
+
+	a.service = servicesurl.New(a.repo, a.cfg.BaseURL, a.cfg.IDlength)
+
 	return nil
 }
 
-func (a *App) getHTTPServer(serverPort string) error {
+func (a *App) initHTTPServer() error {
+	if a.cfg.ServerPort == "" {
+		return ErrInitServerFailed
+	}
 	handlers := apiurl.New(a.service)
+
 	router := chi.NewRouter()
-	router.Use(middleware.Compress(4))
-	router.Post("/", apiurl.WithLogging(handlers.Shorten))
-	router.Post("/api/shorten", apiurl.WithLogging(handlers.ShortenAPI))
-	router.Get("/{id}", apiurl.WithLogging(handlers.Expand))
+	router.Use(middleware.WithLogging)
+	router.Use(middleware.WithGzip)
+	router.Post("/", handlers.Shorten)
+	router.Post("/api/shorten", handlers.ShortenAPI)
+	router.Get("/{id}", handlers.Expand)
+
 	a.server = &http.Server{
-		Addr:    serverPort,
+		Addr:    a.cfg.ServerPort,
 		Handler: router,
 	}
 	return nil

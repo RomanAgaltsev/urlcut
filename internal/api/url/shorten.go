@@ -24,7 +24,6 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 	}
 
 	url, err := h.service.Shorten(string(longURL))
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
