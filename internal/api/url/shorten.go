@@ -39,11 +39,6 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	dec := json.NewDecoder(r.Body)
 
 	var req model.Request
