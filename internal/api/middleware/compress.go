@@ -7,35 +7,6 @@ import (
 	"strings"
 )
 
-type compressWriter struct {
-	writer   http.ResponseWriter
-	gzwriter *gzip.Writer
-}
-
-func newCompressWriter(w http.ResponseWriter) *compressWriter {
-	return &compressWriter{
-		writer:   w,
-		gzwriter: gzip.NewWriter(w),
-	}
-}
-
-func (c *compressWriter) Header() http.Header {
-	return c.writer.Header()
-}
-
-func (c *compressWriter) Write(p []byte) (int, error) {
-	return c.gzwriter.Write(p)
-}
-
-func (c *compressWriter) WriteHeader(statusCode int) {
-	c.writer.Header().Set("Content-Encoding", "gzip")
-	c.writer.WriteHeader(statusCode)
-}
-
-func (c *compressWriter) Close() error {
-	return c.gzwriter.Close()
-}
-
 type compressReader struct {
 	reader   io.ReadCloser
 	gzreader *gzip.Reader
