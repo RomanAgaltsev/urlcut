@@ -37,13 +37,6 @@ func (c *compressReader) Close() error {
 
 func WithGzip(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//		tempWriter := w
-		//		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-		//			compWriter := newCompressWriter(w)
-		//			tempWriter = compWriter
-		//			defer func() { _ = compWriter.Close() }()
-		//		}
-
 		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
 			compReader, err := newCompressReader(r.Body)
 			if err != nil {
