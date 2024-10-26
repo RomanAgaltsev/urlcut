@@ -15,7 +15,7 @@ func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(url.Long) == 0 {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, "URL ID was not found in repository", http.StatusNotFound)
 		return
 	}
 
