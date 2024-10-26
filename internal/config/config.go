@@ -26,7 +26,7 @@ func newConfigBuilder() *configBuilder {
 func (cb *configBuilder) setDefaults() error {
 	cb.serverPort = "localhost:8080"
 	cb.baseURL = "http://localhost:8080"
-	cb.fileStoragePath = "storage.txt"
+	cb.fileStoragePath = "storage.json"
 	cb.idLength = 8
 
 	return nil

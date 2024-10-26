@@ -85,7 +85,12 @@ func (a *App) initLogger() error {
 }
 
 func (a *App) initRepository() error {
-	a.repo = repositoryurl.New()
+	inMemoRepo := repositoryurl.New(a.cfg.FileStoragePath)
+
+	if err := inMemoRepo.RestoreState(); err != nil {
+		return err
+	}
+	a.repo = inMemoRepo
 
 	return nil
 }
@@ -143,6 +148,14 @@ func (a *App) runShortenerApp() error {
 				slog.String("error", err.Error()),
 			)
 		}
+
+		if err := a.repo.SaveState(); err != nil {
+			slog.Error(
+				"failed to save url storage to file",
+				slog.String("error", err.Error()),
+			)
+		}
+
 		close(done)
 	}()
 

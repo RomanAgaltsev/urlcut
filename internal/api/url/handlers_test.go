@@ -36,7 +36,7 @@ func newHelper() *helper {
 		idLength = 8
 	)
 
-	repo := repositoryurl.New()
+	repo := repositoryurl.New("storage.json")
 	service := serviceurl.New(repo, baseURL, idLength)
 	router := chi.NewRouter()
 	handlers := New(service)

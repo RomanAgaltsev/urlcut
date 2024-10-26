@@ -11,6 +11,12 @@ func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
 	url, err := h.service.Expand(urlID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	if len(url.Long) == 0 {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
 	}
 
 	w.Header().Set("Location", url.Long)
