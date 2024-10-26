@@ -6,15 +6,17 @@ import (
 )
 
 type Config struct {
-	ServerPort string
-	BaseURL    string
-	IDlength   int
+	ServerPort      string
+	BaseURL         string
+	FileStoragePath string
+	IDlength        int
 }
 
 type configBuilder struct {
-	serverPort string `env:"SERVER_ADDRESS"`
-	baseURL    string `env:"BASE_URL"`
-	idLength   int
+	serverPort      string `env:"SERVER_ADDRESS"`
+	baseURL         string `env:"BASE_URL"`
+	fileStoragePath string `env:"FILE_STORAGE_PATH"`
+	idLength        int
 }
 
 func newConfigBuilder() *configBuilder {
@@ -24,6 +26,7 @@ func newConfigBuilder() *configBuilder {
 func (cb *configBuilder) setDefaults() error {
 	cb.serverPort = "localhost:8080"
 	cb.baseURL = "http://localhost:8080"
+	cb.fileStoragePath = "storage.txt"
 	cb.idLength = 8
 
 	return nil
@@ -32,6 +35,7 @@ func (cb *configBuilder) setDefaults() error {
 func (cb *configBuilder) setFlags() error {
 	flag.StringVar(&cb.serverPort, "a", cb.serverPort, "address and port to run server")
 	flag.StringVar(&cb.baseURL, "b", cb.baseURL, "basic address of shortened URL")
+	flag.StringVar(&cb.fileStoragePath, "f", cb.fileStoragePath, "path to the storage file")
 	flag.IntVar(&cb.idLength, "l", cb.idLength, "URL ID default length")
 	flag.Parse()
 
@@ -49,14 +53,20 @@ func (cb *configBuilder) setEnvs() error {
 		cb.baseURL = bu
 	}
 
+	fsp := os.Getenv("FILE_STORAGE_PATH")
+	if fsp != "" {
+		cb.fileStoragePath = fsp
+	}
+
 	return nil
 }
 
 func (cb *configBuilder) build() *Config {
 	return &Config{
-		ServerPort: cb.serverPort,
-		BaseURL:    cb.baseURL,
-		IDlength:   cb.idLength,
+		ServerPort:      cb.serverPort,
+		BaseURL:         cb.baseURL,
+		FileStoragePath: cb.fileStoragePath,
+		IDlength:        cb.idLength,
 	}
 }
 
