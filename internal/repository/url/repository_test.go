@@ -35,6 +35,12 @@ func TestStorage(t *testing.T) {
 		err = InMemRepo.SaveState()
 		require.NoError(t, err)
 
+		err = InMemRepo.RestoreState()
+		require.NoError(t, err)
+
+		err = InMemRepo.SaveState()
+		require.NoError(t, err)
+
 		file, err := os.OpenFile("test.json", os.O_RDONLY|os.O_CREATE, 0666)
 		require.NoError(t, err)
 
