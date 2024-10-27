@@ -2,11 +2,12 @@ package url
 
 import (
 	"encoding/json"
-	"github.com/RomanAgaltsev/urlcut/internal/model"
 	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
+
+	"github.com/RomanAgaltsev/urlcut/internal/model"
 )
 
 func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {

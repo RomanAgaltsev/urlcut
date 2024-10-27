@@ -230,10 +230,6 @@ func TestExpandHandler(t *testing.T) {
 			if res.StatusCode() == http.StatusBadRequest || res.StatusCode() == http.StatusMethodNotAllowed {
 				return
 			}
-
-			//			if assert.Contains(t, res.Header(), "Location") {
-			//				assert.Equal(t, test.reqURL, res.Header().Get("Location"))
-			//			}
 		})
 	}
 }
