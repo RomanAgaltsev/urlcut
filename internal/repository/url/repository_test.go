@@ -45,6 +45,7 @@ func TestStorage(t *testing.T) {
 
 		var urlU model.URL
 		err = json.Unmarshal(data, &urlU)
+		require.NoError(t, err)
 		assert.Equal(t, *urlS, urlU)
 
 		err = file.Close()
