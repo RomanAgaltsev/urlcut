@@ -1,7 +1,10 @@
 package url
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/RomanAgaltsev/urlcut/internal/model"
@@ -46,33 +49,47 @@ func (r *InMemoryRepository) Get(id string) (*model.URL, error) {
 }
 
 func (r *InMemoryRepository) SaveState() error {
-	strg, err := newStorage(r.f)
+	file, err := os.OpenFile(r.f, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
-	strg.m = r.m
 
-	if err = strg.save(); err != nil {
+	writer := bufio.NewWriter(file)
+	for _, v := range r.m {
+		data, err := json.Marshal(*v)
+		if err != nil {
+			return err
+		}
+		if _, err = writer.Write(data); err != nil {
+			return err
+		}
+		if err = writer.WriteByte('\n'); err != nil {
+			return err
+		}
+	}
+
+	if err = writer.Flush(); err != nil {
 		return err
 	}
 
-	return nil
+	return file.Close()
 }
 
 func (r *InMemoryRepository) RestoreState() error {
-	strg, err := newStorage(r.f)
+	file, err := os.OpenFile(r.f, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
 
-	if err = strg.restore()
-		err != nil {
-		return err
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		data := scanner.Bytes()
+		var u model.URL
+		if err := json.Unmarshal(data, &u); err != nil {
+			return err
+		}
+		r.m[u.ID] = &u
 	}
 
-	if len(strg.m) > 0 {
-		r.m = strg.m
-	}
-
-	return nil
+	return file.Close()
 }
