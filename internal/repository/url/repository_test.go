@@ -56,5 +56,8 @@ func TestStorage(t *testing.T) {
 
 		err = file.Close()
 		require.NoError(t, err)
+
+		err = os.Remove("test.json")
+		require.NoError(t, err)
 	})
 }
