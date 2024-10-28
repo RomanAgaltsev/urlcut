@@ -78,7 +78,7 @@ func TestShortenHandler(t *testing.T) {
 			req.URL = httpSrv.URL
 
 			res, err := req.
-				SetHeader("Content-Type", "text/plain").
+				SetHeader("Content-Type", ContentTypeText).
 				SetBody(test.reqURL).
 				Send()
 			assert.NoError(t, err)
@@ -90,7 +90,7 @@ func TestShortenHandler(t *testing.T) {
 
 			shortenedURL := string(res.Body())
 
-			assert.Equal(t, "text/plain", res.Header().Get("Content-Type"))
+			assert.Equal(t, ContentTypeText, res.Header().Get("Content-Type"))
 			assert.Equal(t, strings.HasPrefix(shortenedURL, hlp.baseURL), true)
 		})
 	}
@@ -128,7 +128,7 @@ func TestShortenAPIHandler(t *testing.T) {
 			reqBytes, _ := json.Marshal(request)
 
 			res, err := req.
-				SetHeader("Content-Type", "application/json").
+				SetHeader("Content-Type", ContentTypeJSON).
 				SetBody(bytes.NewReader(reqBytes)).
 				Send()
 			assert.NoError(t, err)
@@ -137,7 +137,7 @@ func TestShortenAPIHandler(t *testing.T) {
 			if test.resStatus == http.StatusBadRequest || test.resStatus == http.StatusMethodNotAllowed {
 				return
 			}
-			assert.Equal(t, "application/json", res.Header().Get("Content-Type"))
+			assert.Equal(t, ContentTypeJSON, res.Header().Get("Content-Type"))
 
 			dec := json.NewDecoder(bytes.NewReader(res.Body()))
 			var response model.Response
@@ -155,7 +155,7 @@ func TestShortenAPIHandler(t *testing.T) {
 		req.URL = httpSrv.URL + "/api/shorten"
 
 		res, err := req.
-			SetHeader("Content-Type", "application/json").
+			SetHeader("Content-Type", ContentTypeJSON).
 			Send()
 		assert.NoError(t, err)
 
@@ -175,7 +175,7 @@ func TestShortenAPIHandler(t *testing.T) {
 		req.URL = httpSrv.URL + "/api/shorten"
 
 		res, err := req.
-			SetHeader("Content-Type", "application/json").
+			SetHeader("Content-Type", ContentTypeJSON).
 			SetBody(bytes.NewReader(reqBytes)).
 			Send()
 		assert.NoError(t, err)
@@ -209,7 +209,7 @@ func TestExpandHandler(t *testing.T) {
 			reqPost.URL = httpSrv.URL
 
 			resPost, err := reqPost.
-				SetHeader("Content-Type", "text/plain").
+				SetHeader("Content-Type", ContentTypeText).
 				SetBody(test.reqURL).
 				Send()
 			assert.NoError(t, err)
@@ -222,7 +222,7 @@ func TestExpandHandler(t *testing.T) {
 			req.URL = httpSrv.URL + "/" + urlID
 
 			res, err := req.
-				SetHeader("Content-Type", "text/plain").
+				SetHeader("Content-Type", ContentTypeText).
 				Send()
 			assert.NoError(t, err)
 
@@ -249,7 +249,7 @@ func TestLoggerMiddleWare(t *testing.T) {
 		res, err := resty.
 			New().
 			R().
-			SetHeader("Content-Type", "text/plain").
+			SetHeader("Content-Type", ContentTypeText).
 			SetBody("https://practicum.yandex.ru/").
 			Post(httpSrv.URL)
 		assert.NoError(t, err)
@@ -261,7 +261,7 @@ func TestLoggerMiddleWare(t *testing.T) {
 
 		shortenedURL := string(res.Body())
 
-		assert.Equal(t, "text/plain", res.Header().Get("Content-Type"))
+		assert.Equal(t, ContentTypeText, res.Header().Get("Content-Type"))
 		assert.Equal(t, strings.HasPrefix(shortenedURL, hlp.baseURL), true)
 	})
 }
@@ -298,7 +298,7 @@ func TestCompressMiddleware(t *testing.T) {
 
 		shortenedURL := string(res.Body())
 
-		assert.Equal(t, "text/plain", res.Header().Get("Content-Type"))
+		assert.Equal(t, ContentTypeText, res.Header().Get("Content-Type"))
 		assert.Equal(t, strings.HasPrefix(shortenedURL, hlp.baseURL), true)
 	})
 
@@ -318,7 +318,7 @@ func TestCompressMiddleware(t *testing.T) {
 
 		shortenedURL := string(res.Body())
 
-		assert.Equal(t, "text/plain", res.Header().Get("Content-Type"))
+		assert.Equal(t, ContentTypeText, res.Header().Get("Content-Type"))
 		assert.Equal(t, strings.HasPrefix(shortenedURL, hlp.baseURL), true)
 	})
 }

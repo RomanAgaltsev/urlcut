@@ -27,7 +27,7 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 
 	shortURL := url.Short()
 
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", ContentTypeText)
 	w.Header().Set("Content-Length", strconv.Itoa(len(shortURL)))
 	w.WriteHeader(http.StatusCreated)
 
@@ -75,7 +75,7 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", ContentTypeJSON)
 	w.Header().Set("Content-Length", strconv.Itoa(len(res)))
 	w.WriteHeader(http.StatusCreated)
 
