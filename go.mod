@@ -7,7 +7,7 @@ require (
 	github.com/go-resty/resty/v2 v2.15.3
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/zap v1.27.0
-	go.uber.org/zap/exp v0.2.0
+	go.uber.org/zap/exp v0.3.0
 )
 
 require (
