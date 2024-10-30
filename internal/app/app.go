@@ -1,98 +1,177 @@
 package app
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
+	"github.com/RomanAgaltsev/urlcut/internal/api/middleware"
 	apiurl "github.com/RomanAgaltsev/urlcut/internal/api/url"
-	servicesurl "github.com/RomanAgaltsev/urlcut/internal/services/url"
-
 	"github.com/RomanAgaltsev/urlcut/internal/config"
+	"github.com/RomanAgaltsev/urlcut/internal/logger"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
+	repositoryurl "github.com/RomanAgaltsev/urlcut/internal/repository/url"
+	services "github.com/RomanAgaltsev/urlcut/internal/service"
+	servicesurl "github.com/RomanAgaltsev/urlcut/internal/service/url"
+
 	"github.com/go-chi/chi/v5"
 )
 
-// App - структура приложения
+var (
+	ErrInitConfigFailed  = fmt.Errorf("failed to init config")
+	ErrInitServiceFailed = fmt.Errorf("failed to init service")
+	ErrInitServerFailed  = fmt.Errorf("failed to init HTTP server")
+)
+
 type App struct {
-	repo    repository.Repository // Репозиторий URL
-	service servicesurl.Service   // Сервис сокращения URL
-	server  *http.Server          // HTTP-сервер
+	cfg     *config.Config
+	repo    repository.URLRepository
+	service services.URLService
+	server  *http.Server
 }
 
-// New - возвращает новый экземпляр приложения
 func New() (*App, error) {
-	// Получаем конфигурацию
-	cfg, err := config.Get()
-	// Проверяем наличие ошибки
-	if err != nil {
-		// Есть ошибка, возвращаем nil и ошибку
-		return nil, fmt.Errorf("getting config failed: %v", err)
-	}
-	// Создаем новое приложение
 	app := &App{}
-	// Получаем репозиторий
-	err = app.getRepository()
-	// Проверяем наличие ошибки
+
+	err := app.init()
 	if err != nil {
-		// Есть ошибка, возвращаем nil и ошибку
 		return nil, err
 	}
-	// Получаем сервис
-	err = app.getService(cfg.BaseURL, cfg.IDlength)
-	// Проверяем наличие ошибки
-	if err != nil {
-		// Есть ошибка, возвращаем nil и ошибку
-		return nil, err
-	}
-	// Получаем HTTP-сервер
-	err = app.getHTTPServer(cfg.ServerPort)
-	// Проверяем наличие ошибки
-	if err != nil {
-		// Есть ошибка, возвращаем nil и ошибку
-		return nil, err
-	}
-	// Ошибок не было, возвращаем приложение
+
 	return app, nil
 }
 
-// getRepository - устанавливает репозиторий в приложении
-func (a *App) getRepository() error {
-	a.repo = repository.New()
+func (a *App) init() error {
+	appInits := []func() error{
+		a.initConfig,
+		a.initLogger,
+		a.initRepository,
+		a.initService,
+		a.initHTTPServer,
+	}
+
+	for _, appInit := range appInits {
+		err := appInit()
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-// getService - устанавливает сервис сокращения URL в приложении
-func (a *App) getService(baseURL string, idLength int) error {
-	a.service = servicesurl.NewShortener(a.repo, baseURL, idLength)
+func (a *App) initConfig() error {
+	cfg, err := config.Get()
+	if err != nil {
+		return ErrInitConfigFailed
+	}
+	a.cfg = cfg
+
 	return nil
 }
 
-// getHTTPServer - устанавливает HTTP-сервер в приложении
-func (a *App) getHTTPServer(serverPort string) error {
-	// Получаем обработчики
-	handlers := apiurl.NewHandlers(a.service)
-	// Создаем новый роутер
+func (a *App) initLogger() error {
+	err := logger.Initialize()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *App) initRepository() error {
+	inMemoRepo := repositoryurl.New(a.cfg.FileStoragePath)
+
+	if err := inMemoRepo.RestoreState(); err != nil {
+		return err
+	}
+	a.repo = inMemoRepo
+
+	return nil
+}
+
+func (a *App) initService() error {
+	if a.cfg.BaseURL == "" || a.cfg.IDlength == 0 {
+		return ErrInitServiceFailed
+	}
+
+	a.service = servicesurl.New(a.repo, a.cfg.BaseURL, a.cfg.IDlength)
+
+	return nil
+}
+
+func (a *App) initHTTPServer() error {
+	if a.cfg.ServerPort == "" {
+		return ErrInitServerFailed
+	}
+	handlers := apiurl.New(a.service)
+
 	router := chi.NewRouter()
-	// Добавляем хендлеры
-	router.Post("/", handlers.ShortenURL)   // Запрос на сокращение URL - POST
-	router.Get("/{id}", handlers.ExpandURL) // Запрос на возврат исходного URL - GET
-	// Создаем новый HTTP-сервер
+	router.Use(middleware.WithLogging)
+	router.Use(middleware.WithGzip)
+	router.Post("/", handlers.Shorten)
+	router.Post("/api/shorten", handlers.ShortenAPI)
+	router.Get("/{id}", handlers.Expand)
+
 	a.server = &http.Server{
-		Addr:    serverPort,
+		Addr:    a.cfg.ServerPort,
 		Handler: router,
 	}
 	return nil
 }
 
-// Run - запускает приложение
-func (a *App) Run() {
-	a.runShortenerApp()
+func (a *App) Run() error {
+	return a.runShortenerApp()
 }
 
-// runShortenerApp - запускает HTTP-сервер
-func (a *App) runShortenerApp() {
-	if err := a.server.ListenAndServe(); err != nil {
-		log.Fatalf("running HTTP server failed: %s", err.Error())
+func (a *App) runShortenerApp() error {
+	done := make(chan bool, 1)
+	quit := make(chan os.Signal, 1)
+
+	signal.Notify(quit, os.Interrupt)
+
+	go func() {
+		<-quit
+		slog.Info("shutting down HTTP server")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		if err := a.server.Shutdown(ctx); err != nil {
+			slog.Error(
+				"HTTP server shutdown error",
+				slog.String("error", err.Error()),
+			)
+		}
+
+		if err := a.repo.SaveState(); err != nil {
+			slog.Error(
+				"failed to save url storage to file",
+				slog.String("error", err.Error()),
+			)
+		}
+
+		close(done)
+	}()
+
+	slog.Info(
+		"starting HTTP server",
+		"addr", a.server.Addr,
+	)
+	if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		slog.Error(
+			"HTTP server error",
+			slog.String("error", err.Error()),
+		)
+		return err
 	}
+
+	<-done
+	slog.Info("HTTP server stopped")
+	return nil
 }

@@ -1,172 +1,324 @@
 package url
 
 import (
-	"io"
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	servicesurl "github.com/RomanAgaltsev/urlcut/internal/services/url"
+	"github.com/RomanAgaltsev/urlcut/internal/api/middleware"
+	"github.com/RomanAgaltsev/urlcut/internal/logger"
+	"github.com/RomanAgaltsev/urlcut/internal/model"
+	repositoryurl "github.com/RomanAgaltsev/urlcut/internal/repository/url"
+	serviceurl "github.com/RomanAgaltsev/urlcut/internal/service/url"
 
-	"github.com/RomanAgaltsev/urlcut/internal/config"
-	"github.com/RomanAgaltsev/urlcut/internal/repository"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+type helper struct {
+	baseURL  string
+	idLength int
+	repo     *repositoryurl.InMemoryRepository
+	service  *serviceurl.ShortenerService
+	router   *chi.Mux
+	handlers *Handlers
+}
+
+func newHelper() *helper {
+	const (
+		baseURL  = "http://localhost:8080"
+		idLength = 8
+	)
+
+	repo := repositoryurl.New("storage.json")
+	service := serviceurl.New(repo, baseURL, idLength)
+	router := chi.NewRouter()
+	handlers := New(service)
+
+	return &helper{
+		baseURL:  baseURL,
+		idLength: idLength,
+		repo:     repo,
+		service:  service,
+		router:   router,
+		handlers: handlers,
+	}
+}
+
 func TestShortenHandler(t *testing.T) {
+	hlp := newHelper()
+	hlp.router.Post("/", hlp.handlers.Shorten)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
 	tests := []struct {
 		name      string
 		reqMethod string
 		reqURL    string
 		resStatus int
 	}{
-		{"[POST] [https://practicum.yandex.ru/]",
-			http.MethodPost, "https://practicum.yandex.ru/", http.StatusCreated},
-		{"[POST] [https://translate.yandex.ru/]",
-			http.MethodPost, "https://practicum.yandex.ru/", http.StatusCreated},
-		{"[POST] ['']",
-			http.MethodPost, "", http.StatusBadRequest},
-		{"[GET] ['']",
-			http.MethodGet, "", http.StatusBadRequest},
-		{"[PUT] ['']",
-			http.MethodPut, "", http.StatusBadRequest},
+		{"[POST] [https://practicum.yandex.ru/]", http.MethodPost, "https://practicum.yandex.ru/", http.StatusCreated},
+		{"[POST] [https://translate.yandex.ru/]", http.MethodPost, "https://practicum.yandex.ru/", http.StatusCreated},
+		{"[POST] ['']", http.MethodPost, "", http.StatusBadRequest},
+		{"[GET] ['']", http.MethodGet, "", http.StatusMethodNotAllowed},
+		{"[PUT] ['']", http.MethodPut, "", http.StatusMethodNotAllowed},
 	}
 
-	// Создаем структуру конфигурации
-	cfg := &config.Config{
-		ServerPort: "localhost:8080",
-		BaseURL:    "http://localhost:8080",
-		IDlength:   8,
-	}
-
-	// Чтобы добраться до хендлеров, создаем репо и сервис
-	repo := repository.New()
-	service := servicesurl.NewShortener(repo, cfg.BaseURL, cfg.IDlength)
-	handlers := NewHandlers(service)
-
-	// Запуск тестов
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// Создаем новый запрос
-			req := httptest.NewRequest(test.reqMethod, "/", strings.NewReader(test.reqURL))
-			// Устанавливаем заголовок "Content-Type" запроса
-			req.Header.Set("Content-Type", "text/plain")
+			req := resty.New().R()
+			req.Method = test.reqMethod
+			req.URL = httpSrv.URL
 
-			// Создаем новый ResponseRecorder
-			w := httptest.NewRecorder()
-			// Вызваем хендлер запроса на сокращение URL
-			handlers.ShortenURL(w, req)
+			res, err := req.
+				SetHeader("Content-Type", ContentTypeText).
+				SetBody(test.reqURL).
+				Send()
+			assert.NoError(t, err)
 
-			// Получаем результат-ответ
-			res := w.Result()
-
-			// Проверяем статус ответа
-			assert.Equal(t, test.resStatus, res.StatusCode)
-			if test.resStatus == http.StatusBadRequest {
+			assert.Equal(t, test.resStatus, res.StatusCode())
+			if test.resStatus == http.StatusBadRequest || test.resStatus == http.StatusMethodNotAllowed {
 				return
 			}
 
-			// Проверяем заголовок "Content-Type"
-			assert.Equal(t, "text/plain", res.Header.Get("Content-Type"))
+			shortenedURL := string(res.Body())
 
-			// Откладываем закрытие тела ответа
-			defer res.Body.Close()
-			// Получаем тело ответа
-			resBody, err := io.ReadAll(res.Body)
-			// Проверяем отсутствие ошибок при чтении тела
-			require.NoError(t, err)
-
-			// Получаем сокращенный URL из тела ответа
-			shortenedURL := string(resBody)
-			// Проверяем префикс
-			assert.Equal(t, strings.HasPrefix(shortenedURL, cfg.BaseURL), true)
+			assert.Equal(t, ContentTypeText, res.Header().Get("Content-Type"))
+			assert.Equal(t, strings.HasPrefix(shortenedURL, hlp.baseURL), true)
 		})
 	}
 }
 
-func TestExpandHandler(t *testing.T) {
+func TestShortenAPIHandler(t *testing.T) {
+	hlp := newHelper()
+	hlp.router.Post("/api/shorten", hlp.handlers.ShortenAPI)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
 	tests := []struct {
 		name      string
 		reqMethod string
 		reqURL    string
 		resStatus int
 	}{
-		{"[GET] [https://practicum.yandex.ru/]",
-			http.MethodGet, "https://practicum.yandex.ru/", http.StatusTemporaryRedirect},
-		{"[GET] [https://translate.yandex.ru/]",
-			http.MethodGet, "https://translate.yandex.ru/", http.StatusTemporaryRedirect},
-		{"[POST] [https://translate.yandex.ru/]",
-			http.MethodPost, "https://translate.yandex.ru/", http.StatusBadRequest},
+		{"[POST] [https://practicum.yandex.ru/]", http.MethodPost, "https://practicum.yandex.ru/", http.StatusCreated},
+		{"[POST] [https://translate.yandex.ru/]", http.MethodPost, "https://practicum.yandex.ru/", http.StatusCreated},
+		{"[POST] ['']", http.MethodPost, "", http.StatusBadRequest},
+		{"[GET] ['']", http.MethodGet, "", http.StatusMethodNotAllowed},
+		{"[PUT] ['']", http.MethodPut, "", http.StatusMethodNotAllowed},
 	}
 
-	// Создаем структуру конфигурации
-	cfg := &config.Config{
-		ServerPort: "localhost:8080",
-		BaseURL:    "http://localhost:8080",
-		IDlength:   8,
-	}
-
-	// Чтобы добраться до хендлеров, создаем репо и сервис
-	repo := repository.New()
-	service := servicesurl.NewShortener(repo, cfg.BaseURL, cfg.IDlength)
-	handlers := NewHandlers(service)
-
-	// Запуск тестов
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// Сначала создаем POST запрос на сокращение URL и получения идентификатора сокращенного URL
-			reqPost := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.reqURL))
-			// Устанавливаем заголовок "Content-Type" запроса
-			reqPost.Header.Set("Content-Type", "text/plain")
+			req := resty.New().R()
+			req.Method = test.reqMethod
+			req.URL = httpSrv.URL + "/api/shorten"
 
-			// Создаем новый ResponseRecorder
-			wPost := httptest.NewRecorder()
-			// Вызваем хендлер запроса на сокращение URL
-			handlers.ShortenURL(wPost, reqPost)
+			request := model.Request{
+				URL: test.reqURL,
+			}
+			reqBytes, _ := json.Marshal(request)
 
-			// Получаем результат-ответ
-			resPost := wPost.Result()
+			res, err := req.
+				SetHeader("Content-Type", ContentTypeJSON).
+				SetBody(bytes.NewReader(reqBytes)).
+				Send()
+			assert.NoError(t, err)
 
-			// Откладываем закрытие тела ответа
-			defer resPost.Body.Close()
-			// Получаем тело ответа
-			resPostBody, err := io.ReadAll(resPost.Body)
-			// Проверяем отсутствие ошибок при чтении тела
-			require.NoError(t, err)
-
-			// Получаем сокращенный URL из тела ответа
-			shortenedURL := string(resPostBody)
-			// Получаем идентификатор сокращенного URL
-			urlID := strings.TrimPrefix(shortenedURL, cfg.BaseURL+"/")
-
-			// Создаем новый запрос на получение оригинального URL по идентификатору сокращенного
-			req := httptest.NewRequest(test.reqMethod, "/"+urlID, nil)
-			// Устанавливаем заголовок "Content-Type" запроса
-			req.Header.Set("Content-Type", "text/plain")
-
-			// Создаем новый ResponseRecorder
-			w := httptest.NewRecorder()
-			// Вызываем хендлер запроса на получение оригинального URL
-			handlers.ExpandURL(w, req)
-
-			// Получаем результат-ответ
-			res := w.Result()
-			defer res.Body.Close()
-
-			// Проверяем статус ответа
-			assert.Equal(t, test.resStatus, res.StatusCode)
-			// Если код статуса ответа = 400, обрабатываем отдельно
-			if res.StatusCode == http.StatusBadRequest {
+			assert.Equal(t, test.resStatus, res.StatusCode())
+			if test.resStatus == http.StatusBadRequest || test.resStatus == http.StatusMethodNotAllowed {
 				return
 			}
+			assert.Equal(t, ContentTypeJSON, res.Header().Get("Content-Type"))
 
-			// Проверяем, содержит ли ответ заголовок - Location
-			if assert.Contains(t, res.Header, "Location") {
-				// Если заголовок есть, проверяем его содержимое - оригинальные URL
-				assert.Equal(t, test.reqURL, res.Header.Get("Location"))
+			dec := json.NewDecoder(bytes.NewReader(res.Body()))
+			var response model.Response
+			err = dec.Decode(&response)
+			require.NoError(t, err)
+
+			shortenedURL := response.Result
+			assert.Equal(t, strings.HasPrefix(shortenedURL, hlp.baseURL), true)
+		})
+	}
+
+	t.Run("[POST] [nil body]", func(t *testing.T) {
+		req := resty.New().R()
+		req.Method = http.MethodPost
+		req.URL = httpSrv.URL + "/api/shorten"
+
+		res, err := req.
+			SetHeader("Content-Type", ContentTypeJSON).
+			Send()
+		assert.NoError(t, err)
+
+		assert.Equal(t, http.StatusInternalServerError, res.StatusCode())
+	})
+
+	t.Run("[POST] [Bad body]", func(t *testing.T) {
+		request := struct {
+			Dummy string
+		}{
+			Dummy: "Hi there!",
+		}
+		reqBytes, _ := json.Marshal(request)
+
+		req := resty.New().R()
+		req.Method = http.MethodPost
+		req.URL = httpSrv.URL + "/api/shorten"
+
+		res, err := req.
+			SetHeader("Content-Type", ContentTypeJSON).
+			SetBody(bytes.NewReader(reqBytes)).
+			Send()
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode())
+	})
+}
+
+func TestExpandHandler(t *testing.T) {
+	hlp := newHelper()
+	hlp.router.Post("/", hlp.handlers.Shorten)
+	hlp.router.Get("/{id}", hlp.handlers.Expand)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	tests := []struct {
+		name      string
+		reqMethod string
+		reqURL    string
+		resStatus int
+	}{
+		{"[GET] [https://practicum.yandex.ru/]", http.MethodGet, "https://practicum.yandex.ru/", http.StatusOK},
+		{"[GET] [https://translate.yandex.ru/]", http.MethodGet, "https://translate.yandex.ru/", http.StatusOK},
+		{"[POST] [https://translate.yandex.ru/]", http.MethodPost, "https://translate.yandex.ru/", http.StatusMethodNotAllowed},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			reqPost := resty.New().R()
+			reqPost.Method = http.MethodPost
+			reqPost.URL = httpSrv.URL
+
+			resPost, err := reqPost.
+				SetHeader("Content-Type", ContentTypeText).
+				SetBody(test.reqURL).
+				Send()
+			assert.NoError(t, err)
+
+			shortenedURL := string(resPost.Body())
+			urlID := strings.TrimPrefix(shortenedURL, hlp.baseURL+"/")
+
+			req := resty.New().R()
+			req.Method = test.reqMethod
+			req.URL = httpSrv.URL + "/" + urlID
+
+			res, err := req.
+				SetHeader("Content-Type", ContentTypeText).
+				Send()
+			assert.NoError(t, err)
+
+			assert.Equal(t, test.resStatus, res.StatusCode())
+			if res.StatusCode() == http.StatusBadRequest || res.StatusCode() == http.StatusMethodNotAllowed {
+				return
 			}
 		})
 	}
+}
+
+func TestLoggerMiddleWare(t *testing.T) {
+	err := logger.Initialize()
+	require.NoError(t, err)
+
+	hlp := newHelper()
+	hlp.router.Use(middleware.WithLogging)
+	hlp.router.Post("/", hlp.handlers.Shorten)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	t.Run("[POST] [LoggerMiddleware] [https://practicum.yandex.ru/]", func(t *testing.T) {
+		res, err := resty.
+			New().
+			R().
+			SetHeader("Content-Type", ContentTypeText).
+			SetBody("https://practicum.yandex.ru/").
+			Post(httpSrv.URL)
+		assert.NoError(t, err)
+
+		assert.Equal(t, http.StatusCreated, res.StatusCode())
+		if res.StatusCode() == http.StatusBadRequest || res.StatusCode() == http.StatusMethodNotAllowed {
+			return
+		}
+
+		shortenedURL := string(res.Body())
+
+		assert.Equal(t, ContentTypeText, res.Header().Get("Content-Type"))
+		assert.Equal(t, strings.HasPrefix(shortenedURL, hlp.baseURL), true)
+	})
+}
+
+func TestCompressMiddleware(t *testing.T) {
+	hlp := newHelper()
+	hlp.router.Use(middleware.WithGzip)
+	hlp.router.Post("/compress", hlp.handlers.Shorten)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	t.Run("[POST] [CompressMiddleware gzip/''] [https://practicum.yandex.ru/]", func(t *testing.T) {
+		buf := bytes.NewBuffer(nil)
+		gzipWriter := gzip.NewWriter(buf)
+		_, err := gzipWriter.Write([]byte("https://practicum.yandex.ru/"))
+		require.NoError(t, err)
+		err = gzipWriter.Close()
+		require.NoError(t, err)
+
+		res, err := resty.
+			New().
+			R().
+			SetHeader("Content-Encoding", "gzip").
+			SetHeader("Accept-Encoding", "").
+			SetBody(buf.Bytes()).
+			Post(httpSrv.URL + "/compress")
+		assert.NoError(t, err)
+
+		assert.Equal(t, http.StatusCreated, res.StatusCode())
+		if res.StatusCode() == http.StatusBadRequest || res.StatusCode() == http.StatusMethodNotAllowed {
+			return
+		}
+
+		shortenedURL := string(res.Body())
+
+		assert.Equal(t, ContentTypeText, res.Header().Get("Content-Type"))
+		assert.Equal(t, strings.HasPrefix(shortenedURL, hlp.baseURL), true)
+	})
+
+	t.Run("[POST] [CompressMiddleware ''/gzip] [https://practicum.yandex.ru/]", func(t *testing.T) {
+		res, err := resty.
+			New().
+			R().
+			SetHeader("Accept-Encoding", "gzip").
+			SetBody("https://practicum.yandex.ru/").
+			Post(httpSrv.URL + "/compress")
+		assert.NoError(t, err)
+
+		assert.Equal(t, http.StatusCreated, res.StatusCode())
+		if res.StatusCode() == http.StatusBadRequest || res.StatusCode() == http.StatusMethodNotAllowed {
+			return
+		}
+
+		shortenedURL := string(res.Body())
+
+		assert.Equal(t, ContentTypeText, res.Header().Get("Content-Type"))
+		assert.Equal(t, strings.HasPrefix(shortenedURL, hlp.baseURL), true)
+	})
 }

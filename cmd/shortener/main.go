@@ -7,13 +7,13 @@ import (
 )
 
 func main() {
-	// Создаем новое приложение
 	application, err := app.New()
-	// Проверяем наличие ошибок
 	if err != nil {
-		// Есть ошибка, выводим
-		log.Fatalf("running shortener application failed: %s", err.Error())
+		log.Fatalf("failed to initialize application : %s", err.Error())
 	}
-	// Запускаем приложение
-	application.Run()
+
+	err = application.Run()
+	if err != nil {
+		log.Fatalf("failed to run application : %s", err.Error())
+	}
 }
