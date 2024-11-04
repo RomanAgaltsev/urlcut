@@ -20,29 +20,35 @@ func TestGet(t *testing.T) {
 			map[string]string{
 				"SERVER_ADDRESS":    "localhost:8081",
 				"BASE_URL":          "http://localhost:8081",
-				"FILE_STORAGE_PATH": "storage.json"},
+				"FILE_STORAGE_PATH": "storage.json",
+				"DATABASE_DSN":      "test_dsn"},
 			[]string{},
 			&Config{
 				ServerPort:      "localhost:8081",
 				BaseURL:         "http://localhost:8081",
 				FileStoragePath: "storage.json",
+				DatabaseDSN:     "test_dsn",
 				IDlength:        8,
 			},
 		},
 
 		{"flags without envs",
 			map[string]string{
-				"SERVER_ADDRESS": "",
-				"BASE_URL":       ""},
+				"SERVER_ADDRESS":    "",
+				"BASE_URL":          "",
+				"FILE_STORAGE_PATH": "",
+				"DATABASE_DSN":      ""},
 			[]string{
 				"-a", "localhost:8082",
 				"-b", "http://localhost:8082",
 				"-f", "storage.json",
+				"-d", "test1_dsn",
 				"-l", "9"},
 			&Config{
 				ServerPort:      "localhost:8082",
 				BaseURL:         "http://localhost:8082",
 				FileStoragePath: "storage.json",
+				DatabaseDSN:     "test1_dsn",
 				IDlength:        9,
 			},
 		},
@@ -51,16 +57,19 @@ func TestGet(t *testing.T) {
 			map[string]string{
 				"SERVER_ADDRESS":    "localhost:8083",
 				"BASE_URL":          "http://localhost:8083",
-				"FILE_STORAGE_PATH": "storage1.json"},
+				"FILE_STORAGE_PATH": "storage1.json",
+				"DATABASE_DSN":      "test_dsn"},
 			[]string{
 				"-a", "localhost:8084",
 				"-b", "http://localhost:8084",
 				"-f", "storage2.json",
+				"-d", "test1_dsn",
 				"-l", "10"},
 			&Config{
 				ServerPort:      "localhost:8083",
 				BaseURL:         "http://localhost:8083",
 				FileStoragePath: "storage1.json",
+				DatabaseDSN:     "test_dsn",
 				IDlength:        10,
 			},
 		},
@@ -68,14 +77,17 @@ func TestGet(t *testing.T) {
 			map[string]string{
 				"SERVER_ADDRESS":    "localhost:8084",
 				"BASE_URL":          "",
-				"FILE_STORAGE_PATH": ""},
+				"FILE_STORAGE_PATH": "",
+				"DATABASE_DSN":      ""},
 			[]string{
 				"-b", "http://localhost:8085",
-				"-f", "storage2.json"},
+				"-f", "storage2.json",
+				"-d", "test1_dsn"},
 			&Config{
 				ServerPort:      "localhost:8084",
 				BaseURL:         "http://localhost:8085",
 				FileStoragePath: "storage2.json",
+				DatabaseDSN:     "test1_dsn",
 				IDlength:        8,
 			},
 		},
@@ -83,7 +95,8 @@ func TestGet(t *testing.T) {
 			map[string]string{
 				"SERVER_ADDRESS":    "",
 				"BASE_URL":          "http://localhost:8086",
-				"FILE_STORAGE_PATH": "storage1.json"},
+				"FILE_STORAGE_PATH": "storage1.json",
+				"DATABASE_DSN":      "test_dsn"},
 			[]string{
 				"-a", "localhost:8087",
 				"-l", "12"},
@@ -91,6 +104,7 @@ func TestGet(t *testing.T) {
 				ServerPort:      "localhost:8087",
 				BaseURL:         "http://localhost:8086",
 				FileStoragePath: "storage1.json",
+				DatabaseDSN:     "test_dsn",
 				IDlength:        12,
 			},
 		},
@@ -98,13 +112,15 @@ func TestGet(t *testing.T) {
 			map[string]string{
 				"SERVER_ADDRESS":    "localhost:8088",
 				"BASE_URL":          "http://localhost:8088",
-				"FILE_STORAGE_PATH": "storage1.json"},
+				"FILE_STORAGE_PATH": "storage1.json",
+				"DATABASE_DSN":      "test_dsn"},
 			[]string{
 				"-a", "localhost:8089"},
 			&Config{
 				ServerPort:      "localhost:8088",
 				BaseURL:         "http://localhost:8088",
 				FileStoragePath: "storage1.json",
+				DatabaseDSN:     "test_dsn",
 				IDlength:        8,
 			},
 		},
@@ -116,11 +132,13 @@ func TestGet(t *testing.T) {
 				"-a", "localhost:8091",
 				"-b", "http://localhost:8091",
 				"-f", "storage2.json",
+				"-d", "test1_dsn",
 				"-l", "12"},
 			&Config{
 				ServerPort:      "localhost:8091",
 				BaseURL:         "http://localhost:8090",
 				FileStoragePath: "storage2.json",
+				DatabaseDSN:     "test1_dsn",
 				IDlength:        12,
 			},
 		},
