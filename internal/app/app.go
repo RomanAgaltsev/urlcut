@@ -13,11 +13,10 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/api/middleware"
 	apiurl "github.com/RomanAgaltsev/urlcut/internal/api/url"
 	"github.com/RomanAgaltsev/urlcut/internal/config"
+	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/logger"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
-	repositoryurl "github.com/RomanAgaltsev/urlcut/internal/repository/url"
-	services "github.com/RomanAgaltsev/urlcut/internal/service"
-	servicesurl "github.com/RomanAgaltsev/urlcut/internal/service/url"
+	"github.com/RomanAgaltsev/urlcut/internal/services"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -29,10 +28,12 @@ var (
 )
 
 type App struct {
-	cfg     *config.Config
-	repo    repository.URLRepository
-	service services.URLService
-	server  *http.Server
+	config *config.Config
+	server *http.Server
+
+	shortener  interfaces.URLShortExpander
+	repository interfaces.URLStoreGetter
+	stater     interfaces.StateSetGetter
 }
 
 func New() (*App, error) {
@@ -51,7 +52,7 @@ func (a *App) init() error {
 		a.initConfig,
 		a.initLogger,
 		a.initRepository,
-		a.initService,
+		a.initShortener,
 		a.initHTTPServer,
 	}
 
@@ -70,7 +71,7 @@ func (a *App) initConfig() error {
 	if err != nil {
 		return ErrInitConfigFailed
 	}
-	a.cfg = cfg
+	a.config = cfg
 
 	return nil
 }
@@ -85,31 +86,39 @@ func (a *App) initLogger() error {
 }
 
 func (a *App) initRepository() error {
-	inMemoRepo := repositoryurl.New(a.cfg.FileStoragePath)
+	inMemoryRepository := repository.NewInMemoryRepository()
 
-	if err := inMemoRepo.RestoreState(); err != nil {
-		return err
+	saver := services.NewStateSaver(a.config.FileStoragePath)
+	state, err := saver.RestoreState()
+	if err == nil {
+		if err := inMemoryRepository.SetState(state); err != nil {
+			slog.Error(
+				"failed to restore url storage from file",
+				slog.String("error", err.Error()),
+			)
+		}
 	}
-	a.repo = inMemoRepo
+	a.repository = inMemoryRepository
+	a.stater = inMemoryRepository
 
 	return nil
 }
 
-func (a *App) initService() error {
-	if a.cfg.BaseURL == "" || a.cfg.IDlength == 0 {
+func (a *App) initShortener() error {
+	if a.config.BaseURL == "" || a.config.IDlength == 0 {
 		return ErrInitServiceFailed
 	}
 
-	a.service = servicesurl.New(a.repo, a.cfg.BaseURL, a.cfg.IDlength)
+	a.shortener = services.NewShortener(a.repository, a.config.BaseURL, a.config.IDlength)
 
 	return nil
 }
 
 func (a *App) initHTTPServer() error {
-	if a.cfg.ServerPort == "" {
+	if a.config.ServerPort == "" {
 		return ErrInitServerFailed
 	}
-	handlers := apiurl.New(a.service)
+	handlers := apiurl.New(a.shortener)
 
 	router := chi.NewRouter()
 	router.Use(middleware.WithLogging)
@@ -117,9 +126,10 @@ func (a *App) initHTTPServer() error {
 	router.Post("/", handlers.Shorten)
 	router.Post("/api/shorten", handlers.ShortenAPI)
 	router.Get("/{id}", handlers.Expand)
+	router.Get("/ping", handlers.Ping)
 
 	a.server = &http.Server{
-		Addr:    a.cfg.ServerPort,
+		Addr:    a.config.ServerPort,
 		Handler: router,
 	}
 	return nil
@@ -149,7 +159,8 @@ func (a *App) runShortenerApp() error {
 			)
 		}
 
-		if err := a.repo.SaveState(); err != nil {
+		saver := services.NewStateSaver(a.config.FileStoragePath)
+		if err := saver.SaveState(a.stater.GetState()); err != nil {
 			slog.Error(
 				"failed to save url storage to file",
 				slog.String("error", err.Error()),

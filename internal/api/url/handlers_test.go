@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,8 +13,8 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/api/middleware"
 	"github.com/RomanAgaltsev/urlcut/internal/logger"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
-	repositoryurl "github.com/RomanAgaltsev/urlcut/internal/repository/url"
-	serviceurl "github.com/RomanAgaltsev/urlcut/internal/service/url"
+	"github.com/RomanAgaltsev/urlcut/internal/repository"
+	"github.com/RomanAgaltsev/urlcut/internal/services"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-resty/resty/v2"
@@ -24,10 +25,11 @@ import (
 type helper struct {
 	baseURL  string
 	idLength int
-	repo     *repositoryurl.InMemoryRepository
-	service  *serviceurl.ShortenerService
 	router   *chi.Mux
 	handlers *Handlers
+
+	shortener  interfaces.URLShortExpander
+	repository interfaces.URLStoreGetter
 }
 
 func newHelper() *helper {
@@ -36,18 +38,19 @@ func newHelper() *helper {
 		idLength = 8
 	)
 
-	repo := repositoryurl.New("storage.json")
-	service := serviceurl.New(repo, baseURL, idLength)
+	repo := repository.NewInMemoryRepository()
+	//"storage.json"
+	service := services.NewShortener(repo, baseURL, idLength)
 	router := chi.NewRouter()
 	handlers := New(service)
 
 	return &helper{
-		baseURL:  baseURL,
-		idLength: idLength,
-		repo:     repo,
-		service:  service,
-		router:   router,
-		handlers: handlers,
+		baseURL:    baseURL,
+		idLength:   idLength,
+		repository: repo,
+		shortener:  service,
+		router:     router,
+		handlers:   handlers,
 	}
 }
 

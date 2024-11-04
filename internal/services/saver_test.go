@@ -1,8 +1,9 @@
-package url
+package services
 
 import (
 	"bufio"
 	"encoding/json"
+	"github.com/RomanAgaltsev/urlcut/internal/repository"
 	"os"
 	"testing"
 
@@ -13,32 +14,33 @@ import (
 )
 
 func TestStorage(t *testing.T) {
-	t.Run("Storage test", func(t *testing.T) {
+	t.Run("Saver test", func(t *testing.T) {
 		urlS := &model.URL{
 			Long: "https://app.pachca.com",
 			Base: "http://localhost:8080",
 			ID:   "1q2w3e4r",
 		}
+		state := map[string]*model.URL{
+			"1q2w3e4r": urlS,
+		}
 
-		InMemRepo := New("test.json")
+		inMemoryRepository := repository.NewInMemoryRepository()
+		stateSaver := NewStateSaver("test.json")
 
-		err := InMemRepo.RestoreState()
+		err := stateSaver.SaveState(state)
 		require.NoError(t, err)
 
-		err = InMemRepo.Store(urlS)
+		restoredState, err := stateSaver.RestoreState()
+		require.NoError(t, err)
+		assert.Equal(t, state, restoredState)
+
+		err = inMemoryRepository.SetState(restoredState)
 		require.NoError(t, err)
 
-		urlG, err := InMemRepo.Get("1q2w3e4r")
-		require.NoError(t, err)
-		assert.Equal(t, *urlS, *urlG)
+		fromMemoryState := inMemoryRepository.GetState()
+		assert.Equal(t, state, fromMemoryState)
 
-		err = InMemRepo.SaveState()
-		require.NoError(t, err)
-
-		err = InMemRepo.RestoreState()
-		require.NoError(t, err)
-
-		err = InMemRepo.SaveState()
+		err = stateSaver.SaveState(state)
 		require.NoError(t, err)
 
 		file, err := os.OpenFile("test.json", os.O_RDONLY|os.O_CREATE, 0666)
