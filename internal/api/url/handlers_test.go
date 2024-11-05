@@ -235,6 +235,32 @@ func TestExpandHandler(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("[GET] [not found]", func(t *testing.T) {
+		res, err := resty.
+			New().
+			R().
+			Get(httpSrv.URL + "/h7Ds18sD")
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, res.StatusCode())
+	})
+}
+
+func TestPingHandler(t *testing.T) {
+	hlp := newHelper()
+	hlp.router.Get("/ping", hlp.handlers.Ping)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	t.Run("[GET] [ping]", func(t *testing.T) {
+		res, err := resty.
+			New().
+			R().
+			Get(httpSrv.URL + "/ping")
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode())
+	})
 }
 
 func TestLoggerMiddleWare(t *testing.T) {
