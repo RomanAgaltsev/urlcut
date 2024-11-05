@@ -8,7 +8,7 @@ import (
 func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
 	urlID := strings.TrimPrefix(r.URL.Path, "/")
 
-	url, err := h.service.Expand(urlID)
+	url, err := h.shortener.Expand(urlID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return

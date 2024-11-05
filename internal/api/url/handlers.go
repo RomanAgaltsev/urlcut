@@ -10,11 +10,11 @@ const (
 )
 
 type Handlers struct {
-	service interfaces.URLShortExpander
+	shortener interfaces.URLShortExpander
 }
 
-func New(service interfaces.URLShortExpander) *Handlers {
+func New(shortener interfaces.URLShortExpander) *Handlers {
 	return &Handlers{
-		service: service,
+		shortener: shortener,
 	}
 }

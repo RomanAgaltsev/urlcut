@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -30,6 +31,7 @@ var (
 type App struct {
 	config *config.Config
 	server *http.Server
+	db     *sql.DB
 
 	shortener  interfaces.URLShortExpander
 	repository interfaces.URLStoreGetter
@@ -100,6 +102,22 @@ func (a *App) initRepository() error {
 	}
 	a.repository = inMemoryRepository
 	a.stater = inMemoryRepository
+
+	if a.config.DatabaseDSN != "" {
+		db, err := sql.Open("pgx", a.config.DatabaseDSN)
+		if err != nil {
+			slog.Error(
+				"failed to open DB connection",
+				slog.String("error", err.Error()),
+			)
+		}
+		db.SetMaxIdleConns(5)
+		db.SetMaxOpenConns(5)
+		db.SetConnMaxIdleTime(1 * time.Second)
+		db.SetConnMaxLifetime(30 * time.Second)
+
+		a.db = db
+	}
 
 	return nil
 }

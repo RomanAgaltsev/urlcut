@@ -19,7 +19,7 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url, err := h.service.Shorten(string(longURL))
+	url, err := h.shortener.Shorten(string(longURL))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -57,7 +57,7 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url, err := h.service.Shorten(longURL)
+	url, err := h.shortener.Shorten(longURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		slog.Info(

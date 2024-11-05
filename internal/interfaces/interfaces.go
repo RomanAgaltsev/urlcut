@@ -7,6 +7,7 @@ import (
 type URLShortExpander interface {
 	Shorten(longURL string) (*model.URL, error)
 	Expand(id string) (*model.URL, error)
+	Check() error
 }
 
 type URLStoreGetter interface {

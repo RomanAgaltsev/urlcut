@@ -47,3 +47,7 @@ func (s *Shortener) Expand(id string) (*model.URL, error) {
 
 	return url, nil
 }
+
+func (s *Shortener) Check() error {
+	return s.repository.Check()
+}

@@ -10,7 +10,10 @@ import (
 
 var _ interfaces.URLStoreGetter = (*InMemoryRepository)(nil)
 
-var ErrIDNotFound = fmt.Errorf("URL ID was not found in repository")
+var (
+	ErrIDNotFound         = fmt.Errorf("URL ID was not found in repository")
+	ErrStorageUnavailable = fmt.Errorf("storage unavailable")
+)
 
 type InMemoryRepository struct {
 	m map[string]*model.URL
@@ -53,5 +56,8 @@ func (r *InMemoryRepository) GetState() map[string]*model.URL {
 }
 
 func (r *InMemoryRepository) Check() error {
+	if r.m == nil {
+		return ErrStorageUnavailable
+	}
 	return nil
 }
