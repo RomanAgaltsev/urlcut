@@ -3,6 +3,8 @@ package repository
 import (
     "context"
     "database/sql"
+    "log/slog"
+    "time"
 
     "github.com/RomanAgaltsev/urlcut/internal/interfaces"
     "github.com/RomanAgaltsev/urlcut/internal/model"
@@ -14,7 +16,19 @@ type DBRepository struct {
     db *sql.DB
 }
 
-func NewDBRepository(db *sql.DB) *DBRepository {
+func NewDBRepository(databaseDSN string) *DBRepository {
+    db, err := sql.Open("pgx", databaseDSN)
+    if err != nil {
+        slog.Error(
+            "failed to open DB connection",
+            slog.String("error", err.Error()),
+        )
+    }
+    db.SetMaxIdleConns(5)
+    db.SetMaxOpenConns(5)
+    db.SetConnMaxIdleTime(1 * time.Second)
+    db.SetConnMaxLifetime(30 * time.Second)
+
     return &DBRepository{
         db: db,
     }

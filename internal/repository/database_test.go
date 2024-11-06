@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"database/sql"
-	"github.com/RomanAgaltsev/urlcut/internal/model"
 	"testing"
+
+	"github.com/RomanAgaltsev/urlcut/internal/model"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/assert"
@@ -17,12 +17,12 @@ func TestDBRepository(t *testing.T) {
 		ID:   "1q2w3e4r",
 	}
 
-	db, err := sql.Open("pgx", "")
-	require.NoError(t, err)
+	//db, err := sql.Open("pgx", "")
+	//require.NoError(t, err)
 
-	dbRepository := NewDBRepository(db)
+	dbRepository := NewDBRepository("")
 
-	err = dbRepository.Store(url)
+	err := dbRepository.Store(url)
 	require.NoError(t, err)
 
 	urlG, err := dbRepository.Get("1q2w3e4r")

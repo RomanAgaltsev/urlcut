@@ -24,7 +24,7 @@ func TestStorage(t *testing.T) {
 			"1q2w3e4r": urlS,
 		}
 
-		inMemoryRepository := repository.NewInMemoryRepository()
+		inMemoryRepository := repository.NewInMemoryRepository("")
 		stateSaver := NewStateSaver("test.json")
 
 		err := stateSaver.SaveState(state)

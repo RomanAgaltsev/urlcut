@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/RomanAgaltsev/urlcut/internal/api/middleware"
+	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/logger"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
@@ -32,15 +32,15 @@ type helper struct {
 	repository interfaces.Repository
 }
 
-func newHelper() *helper {
+func newHelper(t *testing.T) *helper {
 	const (
 		baseURL  = "http://localhost:8080"
 		idLength = 8
 	)
 
-	repo := repository.NewInMemoryRepository()
-	//"storage.json"
-	service := services.NewShortener(repo, baseURL, idLength)
+	repo := repository.NewInMemoryRepository("storage.json")
+	service, err := services.NewShortener(repo, baseURL, idLength)
+	require.NoError(t, err)
 	router := chi.NewRouter()
 	handlers := New(service)
 
@@ -55,7 +55,7 @@ func newHelper() *helper {
 }
 
 func TestShortenHandler(t *testing.T) {
-	hlp := newHelper()
+	hlp := newHelper(t)
 	hlp.router.Post("/", hlp.handlers.Shorten)
 
 	httpSrv := httptest.NewServer(hlp.router)
@@ -100,7 +100,7 @@ func TestShortenHandler(t *testing.T) {
 }
 
 func TestShortenAPIHandler(t *testing.T) {
-	hlp := newHelper()
+	hlp := newHelper(t)
 	hlp.router.Post("/api/shorten", hlp.handlers.ShortenAPI)
 
 	httpSrv := httptest.NewServer(hlp.router)
@@ -187,7 +187,7 @@ func TestShortenAPIHandler(t *testing.T) {
 }
 
 func TestExpandHandler(t *testing.T) {
-	hlp := newHelper()
+	hlp := newHelper(t)
 	hlp.router.Post("/", hlp.handlers.Shorten)
 	hlp.router.Get("/{id}", hlp.handlers.Expand)
 
@@ -247,7 +247,7 @@ func TestExpandHandler(t *testing.T) {
 }
 
 func TestPingHandler(t *testing.T) {
-	hlp := newHelper()
+	hlp := newHelper(t)
 	hlp.router.Get("/ping", hlp.handlers.Ping)
 
 	httpSrv := httptest.NewServer(hlp.router)
@@ -267,7 +267,7 @@ func TestLoggerMiddleWare(t *testing.T) {
 	err := logger.Initialize()
 	require.NoError(t, err)
 
-	hlp := newHelper()
+	hlp := newHelper(t)
 	hlp.router.Use(middleware.WithLogging)
 	hlp.router.Post("/", hlp.handlers.Shorten)
 
@@ -296,7 +296,7 @@ func TestLoggerMiddleWare(t *testing.T) {
 }
 
 func TestCompressMiddleware(t *testing.T) {
-	hlp := newHelper()
+	hlp := newHelper(t)
 	hlp.router.Use(middleware.WithGzip)
 	hlp.router.Post("/compress", hlp.handlers.Shorten)
 

@@ -9,6 +9,7 @@ import (
 )
 
 var _ interfaces.Service = (*Shortener)(nil)
+var ErrInitServiceFailed = fmt.Errorf("failed to init service")
 
 type Shortener struct {
 	repository interfaces.Repository
@@ -16,12 +17,16 @@ type Shortener struct {
 	idLenght   int
 }
 
-func NewShortener(repository interfaces.Repository, baseURL string, idLength int) *Shortener {
+func NewShortener(repository interfaces.Repository, baseURL string, idLength int) (*Shortener, error) {
+	if baseURL == "" || idLength == 0 {
+		return nil, ErrInitServiceFailed
+	}
+
 	return &Shortener{
 		repository: repository,
 		baseURL:    baseURL,
 		idLenght:   idLength,
-	}
+	}, nil
 }
 
 func (s *Shortener) Shorten(longURL string) (*model.URL, error) {

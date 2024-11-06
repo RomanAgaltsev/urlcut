@@ -24,9 +24,8 @@ import (
 )
 
 var (
-	ErrInitConfigFailed  = fmt.Errorf("failed to init config")
-	ErrInitServiceFailed = fmt.Errorf("failed to init service")
-	ErrInitServerFailed  = fmt.Errorf("failed to init HTTP server")
+	ErrInitConfigFailed = fmt.Errorf("failed to init config")
+	ErrInitServerFailed = fmt.Errorf("failed to init HTTP server")
 )
 
 type App struct {
@@ -34,9 +33,8 @@ type App struct {
 	server *http.Server
 	db     *sql.DB
 
-	shortener  interfaces.Service
-	repository interfaces.Repository
-	stater     interfaces.StateSetGetter
+	shortener interfaces.Service
+	stater    interfaces.StateSetGetter
 }
 
 func New() (*App, error) {
@@ -54,7 +52,6 @@ func (a *App) init() error {
 	appInits := []func() error{
 		a.initConfig,
 		a.initLogger,
-		a.initRepository,
 		a.initShortener,
 		a.initHTTPServer,
 	}
@@ -88,47 +85,18 @@ func (a *App) initLogger() error {
 	return nil
 }
 
-func (a *App) initRepository() error {
-	inMemoryRepository := repository.NewInMemoryRepository()
-
-	saver := services.NewStateSaver(a.config.FileStoragePath)
-	state, err := saver.RestoreState()
-	if err == nil {
-		if err := inMemoryRepository.SetState(state); err != nil {
-			slog.Error(
-				"failed to restore url storage from file",
-				slog.String("error", err.Error()),
-			)
-		}
-	}
-	a.repository = inMemoryRepository
-	a.stater = inMemoryRepository
-
-	if a.config.DatabaseDSN != "" {
-		db, err := sql.Open("pgx", a.config.DatabaseDSN)
-		if err != nil {
-			slog.Error(
-				"failed to open DB connection",
-				slog.String("error", err.Error()),
-			)
-		}
-		db.SetMaxIdleConns(5)
-		db.SetMaxOpenConns(5)
-		db.SetConnMaxIdleTime(1 * time.Second)
-		db.SetConnMaxLifetime(30 * time.Second)
-
-		a.db = db
-	}
-
-	return nil
-}
-
 func (a *App) initShortener() error {
-	if a.config.BaseURL == "" || a.config.IDlength == 0 {
-		return ErrInitServiceFailed
+	repo, err := repository.New(a.config.DatabaseDSN, a.config.FileStoragePath)
+	if err != nil {
+		return nil
 	}
 
-	a.shortener = services.NewShortener(a.repository, a.config.BaseURL, a.config.IDlength)
+	shortener, err := services.NewShortener(repo, a.config.BaseURL, a.config.IDlength)
+	if err != nil {
+		return err
+	}
+
+	a.shortener = shortener
 
 	return nil
 }
