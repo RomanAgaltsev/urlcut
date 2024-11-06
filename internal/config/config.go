@@ -2,8 +2,11 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"os"
 )
+
+var ErrInitConfigFailed = fmt.Errorf("failed to init config")
 
 type Config struct {
 	ServerPort      string
@@ -92,7 +95,7 @@ func Get() (*Config, error) {
 	for _, confSet := range confSets {
 		err := confSet()
 		if err != nil {
-			return nil, err
+			return nil, ErrInitConfigFailed
 		}
 	}
 

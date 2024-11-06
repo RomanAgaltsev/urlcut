@@ -24,7 +24,6 @@ import (
 )
 
 var (
-	ErrInitConfigFailed = fmt.Errorf("failed to init config")
 	ErrInitServerFailed = fmt.Errorf("failed to init HTTP server")
 )
 
@@ -69,7 +68,7 @@ func (a *App) init() error {
 func (a *App) initConfig() error {
 	cfg, err := config.Get()
 	if err != nil {
-		return ErrInitConfigFailed
+		return err
 	}
 	a.config = cfg
 
