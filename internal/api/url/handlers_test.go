@@ -42,7 +42,7 @@ func newHelper(t *testing.T) *helper {
 	service, err := services.NewShortener(repo, baseURL, idLength)
 	require.NoError(t, err)
 	router := chi.NewRouter()
-	handlers := New(service)
+	handlers := NewHandlers(service)
 
 	return &helper{
 		baseURL:    baseURL,

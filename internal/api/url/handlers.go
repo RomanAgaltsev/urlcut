@@ -13,7 +13,7 @@ type Handlers struct {
 	shortener interfaces.Service
 }
 
-func New(shortener interfaces.Service) *Handlers {
+func NewHandlers(shortener interfaces.Service) *Handlers {
 	return &Handlers{
 		shortener: shortener,
 	}

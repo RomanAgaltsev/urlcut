@@ -4,27 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/RomanAgaltsev/urlcut/internal/api/middleware"
-	apiurl "github.com/RomanAgaltsev/urlcut/internal/api/url"
+	"github.com/RomanAgaltsev/urlcut/internal/api/url"
 	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/logger"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
 	"github.com/RomanAgaltsev/urlcut/internal/services"
-
-	"github.com/go-chi/chi/v5"
-	_ "github.com/jackc/pgx/v5/stdlib"
-)
-
-var (
-	ErrInitServerFailed = fmt.Errorf("failed to init HTTP server")
 )
 
 type App struct {
@@ -101,23 +92,12 @@ func (a *App) initShortener() error {
 }
 
 func (a *App) initHTTPServer() error {
-	if a.config.ServerPort == "" {
-		return ErrInitServerFailed
+	server, err := url.NewServer(a.shortener, a.config.ServerPort)
+	if err != nil {
+		return err
 	}
-	handlers := apiurl.New(a.shortener)
+	a.server = server
 
-	router := chi.NewRouter()
-	router.Use(middleware.WithLogging)
-	router.Use(middleware.WithGzip)
-	router.Post("/", handlers.Shorten)
-	router.Post("/api/shorten", handlers.ShortenAPI)
-	router.Get("/{id}", handlers.Expand)
-	router.Get("/ping", handlers.Ping)
-
-	a.server = &http.Server{
-		Addr:    a.config.ServerPort,
-		Handler: router,
-	}
 	return nil
 }
 
