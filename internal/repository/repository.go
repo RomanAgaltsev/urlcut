@@ -13,7 +13,11 @@ func New(databaseDSN string, fileStoragePath string) (interfaces.Repository, err
 		return NewInMemoryRepository(fileStoragePath), nil
 	}
 	if fileStoragePath == "" {
-		return NewDBRepository(databaseDSN), nil
+		dbRepository, err := NewDBRepository(databaseDSN)
+		if err != nil {
+			return nil, err
+		}
+		return dbRepository, nil
 	}
 
 	return nil, ErrInitRepositoryFailed
