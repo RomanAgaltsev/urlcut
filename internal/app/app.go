@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -21,7 +20,6 @@ import (
 type App struct {
 	config *config.Config
 	server *http.Server
-	db     *sql.DB
 
 	shortener interfaces.Service
 	stater    interfaces.StateSetGetter
@@ -30,30 +28,27 @@ type App struct {
 func New() (*App, error) {
 	app := &App{}
 
-	err := app.init()
+	err := app.initConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	err = app.initLogger()
+	if err != nil {
+		return nil, err
+	}
+
+	err = app.initShortener()
+	if err != nil {
+		return nil, err
+	}
+
+	err = app.initHTTPServer()
 	if err != nil {
 		return nil, err
 	}
 
 	return app, nil
-}
-
-func (a *App) init() error {
-	appInits := []func() error{
-		a.initConfig,
-		a.initLogger,
-		a.initShortener,
-		a.initHTTPServer,
-	}
-
-	for _, appInit := range appInits {
-		err := appInit()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (a *App) initConfig() error {
