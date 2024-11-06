@@ -8,7 +8,7 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/model"
 )
 
-var _ interfaces.URLStoreGetter = (*InMemoryRepository)(nil)
+var _ interfaces.Repository = (*InMemoryRepository)(nil)
 
 var (
 	ErrIDNotFound         = fmt.Errorf("URL ID was not found in repository")

@@ -34,8 +34,8 @@ type App struct {
 	server *http.Server
 	db     *sql.DB
 
-	shortener  interfaces.URLShortExpander
-	repository interfaces.URLStoreGetter
+	shortener  interfaces.Service
+	repository interfaces.Repository
 	stater     interfaces.StateSetGetter
 }
 

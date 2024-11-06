@@ -8,15 +8,15 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/model"
 )
 
-var _ interfaces.URLShortExpander = (*Shortener)(nil)
+var _ interfaces.Service = (*Shortener)(nil)
 
 type Shortener struct {
-	repository interfaces.URLStoreGetter
+	repository interfaces.Repository
 	baseURL    string
 	idLenght   int
 }
 
-func NewShortener(repository interfaces.URLStoreGetter, baseURL string, idLength int) *Shortener {
+func NewShortener(repository interfaces.Repository, baseURL string, idLength int) *Shortener {
 	return &Shortener{
 		repository: repository,
 		baseURL:    baseURL,

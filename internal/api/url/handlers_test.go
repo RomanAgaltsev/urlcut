@@ -28,8 +28,8 @@ type helper struct {
 	router   *chi.Mux
 	handlers *Handlers
 
-	shortener  interfaces.URLShortExpander
-	repository interfaces.URLStoreGetter
+	shortener  interfaces.Service
+	repository interfaces.Repository
 }
 
 func newHelper() *helper {
