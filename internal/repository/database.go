@@ -42,6 +42,10 @@ func (r *DBRepository) Get(id string) (*model.URL, error) {
     return &model.URL{}, nil
 }
 
+func (r *DBRepository) Close() error {
+    return nil
+}
+
 func (r *DBRepository) Check() error {
     return r.db.PingContext(context.Background())
 }

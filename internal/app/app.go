@@ -18,11 +18,9 @@ import (
 )
 
 type App struct {
-	config *config.Config
-	server *http.Server
-
+	config    *config.Config
+	server    *http.Server
 	shortener interfaces.Service
-	stater    interfaces.StateSetGetter
 }
 
 func New() (*App, error) {
@@ -120,10 +118,9 @@ func (a *App) runShortenerApp() error {
 			)
 		}
 
-		saver := services.NewStateSaver(a.config.FileStoragePath)
-		if err := saver.SaveState(a.stater.GetState()); err != nil {
+		if err := a.shortener.Close(); err != nil {
 			slog.Error(
-				"failed to save url storage to file",
+				"failed to close shortener service",
 				slog.String("error", err.Error()),
 			)
 		}

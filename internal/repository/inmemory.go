@@ -17,25 +17,16 @@ var (
 
 type InMemoryRepository struct {
 	m map[string]*model.URL
+	f string
 	sync.RWMutex
 }
 
 func NewInMemoryRepository(fileStoragePath string) *InMemoryRepository {
-	//	saver := services.NewStateSaver(a.config.FileStoragePath)
-	//	state, err := saver.RestoreState()
-	//	if err == nil {
-	//		if err := inMemoryRepository.SetState(state); err != nil {
-	//			slog.Error(
-	//				"failed to restore url storage from file",
-	//				slog.String("error", err.Error()),
-	//			)
-	//		}
-	//	}
-	//	a.repository = inMemoryRepository
-	//	a.stater = inMemoryRepository
+	m, _ := readFromFile(fileStoragePath)
 
 	return &InMemoryRepository{
-		m: make(map[string]*model.URL),
+		m: m,
+		f: fileStoragePath,
 	}
 }
 
@@ -59,13 +50,8 @@ func (r *InMemoryRepository) Get(id string) (*model.URL, error) {
 	}
 }
 
-func (r *InMemoryRepository) SetState(state map[string]*model.URL) error {
-	r.m = state
-	return nil
-}
-
-func (r *InMemoryRepository) GetState() map[string]*model.URL {
-	return r.m
+func (r *InMemoryRepository) Close() error {
+	return writeToFile(r.f, r.m)
 }
 
 func (r *InMemoryRepository) Check() error {
