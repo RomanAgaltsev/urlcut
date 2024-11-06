@@ -5,11 +5,11 @@ CREATE TABLE IF NOT EXISTS urls (
     long_url TEXT NOT NULL,
     base_url VARCHAR(100) NOT NULL,
     url_id VARCHAR(20) UNIQUE NOT NULL,
-    created_at TIMESTAMP NOT NULL NOW()
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS long_url_idx ON long_url (long_url);
-CREATE UNIQUE INDEX IF NOT EXISTS url_id_idx ON url_id (url_id);
+CREATE UNIQUE INDEX IF NOT EXISTS long_url_idx ON urls (long_url);
+CREATE UNIQUE INDEX IF NOT EXISTS url_id_idx ON urls (url_id);
 -- +goose StatementEnd
 
 -- +goose Down

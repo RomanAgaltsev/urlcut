@@ -71,7 +71,7 @@ func (a *App) initLogger() error {
 func (a *App) initShortener() error {
 	repo, err := repository.New(a.config.DatabaseDSN, a.config.FileStoragePath)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	shortener, err := services.NewShortener(repo, a.config.BaseURL, a.config.IDlength)

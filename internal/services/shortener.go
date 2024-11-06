@@ -60,3 +60,4 @@ func (s *Shortener) Close() error {
 func (s *Shortener) Check() error {
 	return s.repository.Check()
 }
+
