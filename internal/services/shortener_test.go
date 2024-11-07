@@ -59,6 +59,15 @@ func TestShortener(t *testing.T) {
 
 	mockRepo.
 		EXPECT().
+		Check().
+		Return(nil).
+		Times(1)
+
+	err = shortener.Check()
+	require.NoError(t, err)
+
+	mockRepo.
+		EXPECT().
 		Close().
 		Return(nil).
 		Times(1)

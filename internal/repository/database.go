@@ -45,11 +45,11 @@ func NewDBRepository(databaseDSN string) (*DBRepository, error) {
         return nil, err
     }
 
-//    db, err := sql.Open("pgx", databaseDSN)
-//    db.SetMaxIdleConns(5)
-//    db.SetMaxOpenConns(5)
-//    db.SetConnMaxIdleTime(1 * time.Second)
-//    db.SetConnMaxLifetime(30 * time.Second)
+    //    db, err := sql.Open("pgx", databaseDSN)
+    //    db.SetMaxIdleConns(5)
+    //    db.SetMaxOpenConns(5)
+    //    db.SetConnMaxIdleTime(1 * time.Second)
+    //    db.SetConnMaxLifetime(30 * time.Second)
 
     dbRepository.conn = conn
 
@@ -84,7 +84,7 @@ func (r *DBRepository) migrate(databaseDSN string) error {
 
     goose.SetBaseFS(embedMigrations)
 
-    ctx, cancel := context.WithTimeout(context.Background(),10 * time.Second)
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
 
     if err = goose.UpContext(ctx, db, "migrations"); err != nil {
@@ -106,7 +106,7 @@ func (r *DBRepository) Store(url *model.URL) error {
     _, err := q.CreateURL(ctx, queries.CreateURLParams{
         LongUrl: url.Long,
         BaseUrl: url.Base,
-        UrlID: url.ID,
+        UrlID:   url.ID,
     })
     if err != nil {
         return err
@@ -129,7 +129,7 @@ func (r *DBRepository) Get(id string) (*model.URL, error) {
     return &model.URL{
         Long: url.LongUrl,
         Base: url.BaseUrl,
-        ID: url.UrlID,
+        ID:   url.UrlID,
     }, nil
 }
 

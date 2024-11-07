@@ -23,10 +23,11 @@ import (
 )
 
 type helper struct {
-	baseURL  string
-	idLength int
-	router   *chi.Mux
-	handlers *Handlers
+	serverPort string
+	baseURL    string
+	idLength   int
+	router     *chi.Mux
+	handlers   *Handlers
 
 	shortener  interfaces.Service
 	repository interfaces.Repository
@@ -34,8 +35,9 @@ type helper struct {
 
 func newHelper(t *testing.T) *helper {
 	const (
-		baseURL  = "http://localhost:8080"
-		idLength = 8
+		serverPort = "localhost:8080"
+		baseURL    = "http://localhost:8080"
+		idLength   = 8
 	)
 
 	repo := repository.NewInMemoryRepository("storage.json")
@@ -45,6 +47,7 @@ func newHelper(t *testing.T) *helper {
 	handlers := NewHandlers(service)
 
 	return &helper{
+		serverPort: serverPort,
 		baseURL:    baseURL,
 		idLength:   idLength,
 		repository: repo,
