@@ -2,9 +2,8 @@ package repository
 
 import (
     "context"
+    "database/sql"
     "embed"
-
-    //"database/sql"
     "log/slog"
     "time"
 
@@ -12,7 +11,6 @@ import (
     "github.com/RomanAgaltsev/urlcut/internal/model"
     "github.com/RomanAgaltsev/urlcut/internal/repository/queries"
 
-    "github.com/jackc/pgx/v5"
     _ "github.com/jackc/pgx/v5/stdlib"
     "github.com/pressly/goose/v3"
 )
@@ -23,20 +21,12 @@ var _ interfaces.Repository = (*DBRepository)(nil)
 var embedMigrations embed.FS
 
 type DBRepository struct {
-    conn *pgx.Conn
+    db *sql.DB
+    *queries.Queries
 }
 
 func NewDBRepository(databaseDSN string) (*DBRepository, error) {
-    dbRepository := &DBRepository{}
-
-    if err := dbRepository.migrate(databaseDSN); err != nil {
-        return nil, err
-    }
-
-    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-    defer cancel()
-
-    conn, err := pgx.Connect(ctx, databaseDSN)
+    db, err := sql.Open("pgx", databaseDSN)
     if err != nil {
         slog.Error(
             "failed to open DB connection",
@@ -45,13 +35,19 @@ func NewDBRepository(databaseDSN string) (*DBRepository, error) {
         return nil, err
     }
 
-    //    db, err := sql.Open("pgx", databaseDSN)
-    //    db.SetMaxIdleConns(5)
-    //    db.SetMaxOpenConns(5)
-    //    db.SetConnMaxIdleTime(1 * time.Second)
-    //    db.SetConnMaxLifetime(30 * time.Second)
+    db.SetMaxIdleConns(5)
+    db.SetMaxOpenConns(5)
+    db.SetConnMaxIdleTime(1 * time.Second)
+    db.SetConnMaxLifetime(30 * time.Second)
 
-    dbRepository.conn = conn
+    dbRepository := &DBRepository{
+        db:      db,
+        Queries: queries.New(db),
+    }
+
+    if err := dbRepository.migrate(databaseDSN); err != nil {
+        return nil, err
+    }
 
     return dbRepository, nil
 }
@@ -98,12 +94,10 @@ func (r *DBRepository) migrate(databaseDSN string) error {
 }
 
 func (r *DBRepository) Store(url *model.URL) error {
-    q := queries.New(r.conn)
-
     ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
     defer cancel()
 
-    _, err := q.CreateURL(ctx, queries.CreateURLParams{
+    _, err := r.CreateURL(ctx, queries.CreateURLParams{
         LongUrl: url.Long,
         BaseUrl: url.Base,
         UrlID:   url.ID,
@@ -116,12 +110,10 @@ func (r *DBRepository) Store(url *model.URL) error {
 }
 
 func (r *DBRepository) Get(id string) (*model.URL, error) {
-    q := queries.New(r.conn)
-
     ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
     defer cancel()
 
-    url, err := q.GetURL(ctx, id)
+    url, err := r.GetURL(ctx, id)
     if err != nil {
         return nil, err
     }
@@ -134,9 +126,9 @@ func (r *DBRepository) Get(id string) (*model.URL, error) {
 }
 
 func (r *DBRepository) Close() error {
-    return r.conn.Close(context.Background())
+    return r.db.Close()
 }
 
 func (r *DBRepository) Check() error {
-    return r.conn.Ping(context.Background())
+    return r.db.Ping()
 }

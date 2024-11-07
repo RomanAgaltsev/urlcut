@@ -5,7 +5,7 @@
 package queries
 
 import (
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 type Url struct {
@@ -13,5 +13,5 @@ type Url struct {
 	LongUrl   string
 	BaseUrl   string
 	UrlID     string
-	CreatedAt pgtype.Timestamp
+	CreatedAt time.Time
 }

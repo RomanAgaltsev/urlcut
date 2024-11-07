@@ -21,7 +21,7 @@ type CreateURLParams struct {
 }
 
 func (q *Queries) CreateURL(ctx context.Context, arg CreateURLParams) (Url, error) {
-	row := q.db.QueryRow(ctx, createURL, arg.LongUrl, arg.BaseUrl, arg.UrlID)
+	row := q.db.QueryRowContext(ctx, createURL, arg.LongUrl, arg.BaseUrl, arg.UrlID)
 	var i Url
 	err := row.Scan(
 		&i.ID,
@@ -40,7 +40,7 @@ WHERE url_id = $1 LIMIT 1
 `
 
 func (q *Queries) GetURL(ctx context.Context, urlID string) (Url, error) {
-	row := q.db.QueryRow(ctx, getURL, urlID)
+	row := q.db.QueryRowContext(ctx, getURL, urlID)
 	var i Url
 	err := row.Scan(
 		&i.ID,

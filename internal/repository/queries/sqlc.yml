@@ -2,9 +2,8 @@ version: "2"
 sql:
     - engine: "postgresql"
       queries: "query.sql"
-      schema: "schema.sql"
+      schema: "../migrations/00001_create_url_table.sql"
       gen:
           go:
               package: "queries"
               out: "../queries"
-              sql_package: "pgx/v5"
