@@ -103,15 +103,6 @@ func (r *DBRepository) bootstrap(databaseDSN string) error {
 func (r *DBRepository) Store(urls []*model.URL) error {
     ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
     defer cancel()
-    //
-    //    _, err := r.CreateURL(ctx, queries.CreateURLParams{
-    //        LongUrl: url.Long,
-    //        BaseUrl: url.Base,
-    //        UrlID:   url.ID,
-    //    })
-    //    if err != nil {
-    //        return err
-    //    }
 
     tx, err := r.db.Begin()
     if err != nil {

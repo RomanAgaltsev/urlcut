@@ -189,6 +189,129 @@ func TestShortenAPIHandler(t *testing.T) {
 	})
 }
 
+func TestShortenAPIBatchHandler(t *testing.T) {
+	hlp := newHelper(t)
+	hlp.router.Post("/api/shorten/batch", hlp.handlers.ShortenAPIBatch)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	t.Run("[POST] [urls]", func(t *testing.T) {
+		type request struct {
+			CorrelationID string `json:"correlation_id"`
+			OriginalURL   string `json:"original_url"`
+		}
+
+		type response struct {
+			CorrelationID string `json:"correlation_id"`
+			ShortURL      string `json:"short_url"`
+		}
+
+		requests := []request{
+			{
+				CorrelationID: "kj24njF2",
+				OriginalURL:   "https://practicum.yandex.ru/",
+			},
+			{
+				CorrelationID: "87sdFin3",
+				OriginalURL:   "https://translate.yandex.ru/",
+			},
+		}
+
+		reqFinds := map[string]bool{"https://practicum.yandex.ru/": false, "https://translate.yandex.ru/": false}
+
+		req := resty.New().R()
+		req.Method = http.MethodPost
+		req.URL = httpSrv.URL + "/api/shorten/batch"
+
+		reqBytes, _ := json.Marshal(requests)
+
+		res, err := req.
+			SetHeader("Content-Type", ContentTypeJSON).
+			SetBody(bytes.NewReader(reqBytes)).
+			Send()
+		assert.NoError(t, err)
+
+		assert.Equal(t, http.StatusCreated, res.StatusCode())
+		assert.Equal(t, ContentTypeJSON, res.Header().Get("Content-Type"))
+
+		dec := json.NewDecoder(bytes.NewReader(res.Body()))
+		var responses []response
+		err = dec.Decode(&responses)
+		require.NoError(t, err)
+
+		assert.Equal(t, len(requests), len(responses))
+
+		for _, req := range requests {
+			for _, res := range responses {
+				if req.CorrelationID == res.CorrelationID {
+					reqFinds[req.OriginalURL] = true
+					assert.True(t, strings.HasPrefix(res.ShortURL, hlp.baseURL))
+				}
+			}
+		}
+
+		for url, found := range reqFinds {
+			assert.Truef(t, found, "url [%s] not found in response", url)
+		}
+
+	})
+
+	t.Run("[POST] [nil body]", func(t *testing.T) {
+		req := resty.New().R()
+		req.Method = http.MethodPost
+		req.URL = httpSrv.URL + "/api/shorten/batch"
+
+		res, err := req.
+			SetHeader("Content-Type", ContentTypeJSON).
+			Send()
+		assert.NoError(t, err)
+
+		assert.Equal(t, http.StatusInternalServerError, res.StatusCode())
+	})
+
+	t.Run("[POST] [Bad body]", func(t *testing.T) {
+		request := struct {
+			Dummy string
+		}{
+			Dummy: "Hi there!",
+		}
+		reqBytes, _ := json.Marshal(request)
+
+		req := resty.New().R()
+		req.Method = http.MethodPost
+		req.URL = httpSrv.URL + "/api/shorten/batch"
+
+		res, err := req.
+			SetHeader("Content-Type", ContentTypeJSON).
+			SetBody(bytes.NewReader(reqBytes)).
+			Send()
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusInternalServerError, res.StatusCode())
+	})
+
+	t.Run("[POST] [Empty body]", func(t *testing.T) {
+		type request struct {
+			CorrelationID string `json:"correlation_id"`
+			OriginalURL   string `json:"original_url"`
+		}
+
+		requests := []request{}
+		reqBytes, _ := json.Marshal(requests)
+
+		req := resty.New().R()
+		req.Method = http.MethodPost
+		req.URL = httpSrv.URL + "/api/shorten/batch"
+
+		res, err := req.
+			SetHeader("Content-Type", ContentTypeJSON).
+			SetBody(bytes.NewReader(reqBytes)).
+			Send()
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode())
+	})
+}
+
 func TestExpandHandler(t *testing.T) {
 	hlp := newHelper(t)
 	hlp.router.Post("/", hlp.handlers.Shorten)

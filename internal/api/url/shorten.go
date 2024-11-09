@@ -2,6 +2,7 @@ package url
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -116,9 +117,11 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 		batch = append(batch, batchReq)
 	}
 
+	slog.String("BATCH", fmt.Sprintf("%v", batch))
+
 	if len(batch) == 0 {
 		slog.Info("got empty batch")
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "empty batch", http.StatusBadRequest)
 		return
 	}
 

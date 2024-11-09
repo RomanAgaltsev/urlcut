@@ -1,34 +1,86 @@
 package repository
 
 import (
-	"testing"
+	"context"
 
-//	"github.com/RomanAgaltsev/urlcut/internal/model"
-//
-//	_ "github.com/jackc/pgx/v5/stdlib"
-//	"github.com/stretchr/testify/assert"
-//	"github.com/stretchr/testify/require"
+	"testing"
+	"time"
+
+	"github.com/RomanAgaltsev/urlcut/internal/model"
+	"github.com/RomanAgaltsev/urlcut/internal/repository/queries"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDBRepository(t *testing.T) {
-//	url := &model.URL{
-//		Long: "https://app.pachca.com",
-//		Base: "http://localhost:8080",
-//		ID:   "1q2w3e4r",
-//	}
+	const (
+		longURL = "https://app.pachca.com"
+		BaseURL = "http://localhost:8080"
+		urlID   = "1q2w3e4r"
+	)
 
-	//db, err := sql.Open("pgx", "")
-	//require.NoError(t, err)
+	urlS := &model.URL{
+		Long:   longURL,
+		Base:   BaseURL,
+		ID:     urlID,
+		CorrID: "",
+	}
 
-//	dbRepository := NewDBRepository("")
-//
-//	err := dbRepository.Store(url)
-//	require.NoError(t, err)
-//
-//	urlG, err := dbRepository.Get("1q2w3e4r")
-//	require.NoError(t, err)
-//	assert.Equal(t, &model.URL{}, urlG)
-//
-//	err = dbRepository.Check()
-//	assert.True(t, err != nil)
+	var dbRepository *DBRepository
+
+	//	dbRepository, err := NewDBRepository("")
+	//	require.NoError(t, err)
+	//
+	//	err = dbRepository.Close()
+	//	require.NoError(t, err)
+
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+
+	rowsIns := sqlmock.NewRows([]string{"id", "long_url", "base_url", "url_id", "created_at"}).
+		AddRow(1, longURL, BaseURL, urlID, time.Now())
+	rowsSel := sqlmock.NewRows([]string{"id", "long_url", "base_url", "url_id", "created_at"}).
+		AddRow(1, longURL, BaseURL, urlID, time.Now())
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("(.*)INSERT(.*)").
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnRows(rowsIns)
+	mock.ExpectCommit()
+	mock.ExpectQuery("(.*)SELECT(.*)").
+		WithArgs(sqlmock.AnyArg()).
+		WillReturnRows(rowsSel)
+	mock.ExpectClose()
+
+	var q *queries.Queries
+
+	q, err = queries.Prepare(context.Background(), db)
+	if err != nil {
+		q = queries.New(db)
+	}
+
+	dbRepository = &DBRepository{
+		db: db,
+		q:  q,
+	}
+
+	err = dbRepository.Store([]*model.URL{urlS})
+	require.NoError(t, err)
+
+	urlG, err := dbRepository.Get(urlID)
+	require.NoError(t, err)
+
+	assert.Equal(t, urlS, urlG)
+
+	err = dbRepository.Check()
+	require.NoError(t, err)
+
+	err = dbRepository.Close()
+	require.NoError(t, err)
+
+	err = mock.ExpectationsWereMet()
+	require.NoError(t, err)
 }
