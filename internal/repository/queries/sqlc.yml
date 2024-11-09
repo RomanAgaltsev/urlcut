@@ -7,3 +7,4 @@ sql:
           go:
               package: "queries"
               out: "../queries"
+              emit_prepared_queries: true
