@@ -30,11 +30,13 @@ func NewInMemoryRepository(fileStoragePath string) *InMemoryRepository {
 	}
 }
 
-func (r *InMemoryRepository) Store(url *model.URL) error {
+func (r *InMemoryRepository) Store(urls []*model.URL) error {
 	r.Lock()
 	defer r.Unlock()
 
-	r.m[url.ID] = url
+	for _, url := range urls {
+		r.m[url.ID] = url
+	}
 
 	return nil
 }

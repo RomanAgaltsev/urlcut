@@ -24,25 +24,25 @@ func New(db DBTX) *Queries {
 func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	q := Queries{db: db}
 	var err error
-	if q.createURLStmt, err = db.PrepareContext(ctx, createURL); err != nil {
-		return nil, fmt.Errorf("error preparing query CreateURL: %w", err)
-	}
 	if q.getURLStmt, err = db.PrepareContext(ctx, getURL); err != nil {
 		return nil, fmt.Errorf("error preparing query GetURL: %w", err)
+	}
+	if q.storeURLStmt, err = db.PrepareContext(ctx, storeURL); err != nil {
+		return nil, fmt.Errorf("error preparing query StoreURL: %w", err)
 	}
 	return &q, nil
 }
 
 func (q *Queries) Close() error {
 	var err error
-	if q.createURLStmt != nil {
-		if cerr := q.createURLStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing createURLStmt: %w", cerr)
-		}
-	}
 	if q.getURLStmt != nil {
 		if cerr := q.getURLStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getURLStmt: %w", cerr)
+		}
+	}
+	if q.storeURLStmt != nil {
+		if cerr := q.storeURLStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing storeURLStmt: %w", cerr)
 		}
 	}
 	return err
@@ -82,17 +82,17 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 }
 
 type Queries struct {
-	db            DBTX
-	tx            *sql.Tx
-	createURLStmt *sql.Stmt
-	getURLStmt    *sql.Stmt
+	db           DBTX
+	tx           *sql.Tx
+	getURLStmt   *sql.Stmt
+	storeURLStmt *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
-		db:            tx,
-		tx:            tx,
-		createURLStmt: q.createURLStmt,
-		getURLStmt:    q.getURLStmt,
+		db:           tx,
+		tx:           tx,
+		getURLStmt:   q.getURLStmt,
+		storeURLStmt: q.storeURLStmt,
 	}
 }

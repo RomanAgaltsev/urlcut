@@ -36,12 +36,40 @@ func (s *Shortener) Shorten(longURL string) (*model.URL, error) {
 		ID:   random.String(s.idLenght),
 	}
 
-	err := s.repository.Store(url)
+	err := s.repository.Store([]*model.URL{url})
 	if err != nil {
 		return &model.URL{}, err
 	}
 
 	return url, nil
+}
+
+func (s *Shortener) ShortenBatch(batch []model.BatchRequest) ([]model.BatchResponse, error) {
+	batchShortened := make([]model.BatchResponse, 0, len(batch))
+	urls := make([]*model.URL, 0, len(batch))
+
+	for _, batchReq := range batch {
+		urls = append(urls, &model.URL{
+			Long:   batchReq.OriginalURL,
+			Base:   s.baseURL,
+			ID:     random.String(s.idLenght),
+			CorrID: batchReq.CorrelationID,
+		})
+	}
+
+	err := s.repository.Store(urls)
+	if err != nil {
+		return batchShortened, err
+	}
+
+	for _, url := range urls {
+		batchShortened = append(batchShortened, model.BatchResponse{
+			CorrelationID: url.CorrID,
+			ShortURL:      url.Short(),
+		})
+	}
+
+	return batchShortened, nil
 }
 
 func (s *Shortener) Expand(id string) (*model.URL, error) {
@@ -60,4 +88,3 @@ func (s *Shortener) Close() error {
 func (s *Shortener) Check() error {
 	return s.repository.Check()
 }
-

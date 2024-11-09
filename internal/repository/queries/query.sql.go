@@ -9,19 +9,14 @@ import (
 	"context"
 )
 
-const createURL = `-- name: CreateURL :one
-INSERT INTO urls (long_url, base_url, url_id)
-VALUES ($1, $2, $3) RETURNING id, long_url, base_url, url_id, created_at
+const getURL = `-- name: GetURL :one
+SELECT id, long_url, base_url, url_id, created_at
+FROM urls
+WHERE url_id = $1 LIMIT 1
 `
 
-type CreateURLParams struct {
-	LongUrl string
-	BaseUrl string
-	UrlID   string
-}
-
-func (q *Queries) CreateURL(ctx context.Context, arg CreateURLParams) (Url, error) {
-	row := q.queryRow(ctx, q.createURLStmt, createURL, arg.LongUrl, arg.BaseUrl, arg.UrlID)
+func (q *Queries) GetURL(ctx context.Context, urlID string) (Url, error) {
+	row := q.queryRow(ctx, q.getURLStmt, getURL, urlID)
 	var i Url
 	err := row.Scan(
 		&i.ID,
@@ -33,14 +28,19 @@ func (q *Queries) CreateURL(ctx context.Context, arg CreateURLParams) (Url, erro
 	return i, err
 }
 
-const getURL = `-- name: GetURL :one
-SELECT id, long_url, base_url, url_id, created_at
-FROM urls
-WHERE url_id = $1 LIMIT 1
+const storeURL = `-- name: StoreURL :one
+INSERT INTO urls (long_url, base_url, url_id)
+VALUES ($1, $2, $3) RETURNING id, long_url, base_url, url_id, created_at
 `
 
-func (q *Queries) GetURL(ctx context.Context, urlID string) (Url, error) {
-	row := q.queryRow(ctx, q.getURLStmt, getURL, urlID)
+type StoreURLParams struct {
+	LongUrl string
+	BaseUrl string
+	UrlID   string
+}
+
+func (q *Queries) StoreURL(ctx context.Context, arg StoreURLParams) (Url, error) {
+	row := q.queryRow(ctx, q.storeURLStmt, storeURL, arg.LongUrl, arg.BaseUrl, arg.UrlID)
 	var i Url
 	err := row.Scan(
 		&i.ID,

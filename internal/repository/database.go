@@ -22,7 +22,7 @@ var embedMigrations embed.FS
 
 type DBRepository struct {
     db *sql.DB
-    *queries.Queries
+    q  *queries.Queries
 }
 
 func NewDBRepository(databaseDSN string) (*DBRepository, error) {
@@ -40,19 +40,26 @@ func NewDBRepository(databaseDSN string) (*DBRepository, error) {
     db.SetConnMaxIdleTime(1 * time.Second)
     db.SetConnMaxLifetime(30 * time.Second)
 
-    dbRepository := &DBRepository{
-        db:      db,
-        Queries: queries.New(db),
+    var q *queries.Queries
+
+    q, err = queries.Prepare(context.Background(), db)
+    if err != nil {
+        q = queries.New(db)
     }
 
-    if err := dbRepository.migrate(databaseDSN); err != nil {
+    dbRepository := &DBRepository{
+        db: db,
+        q:  q,
+    }
+
+    if err := dbRepository.bootstrap(databaseDSN); err != nil {
         return nil, err
     }
 
     return dbRepository, nil
 }
 
-func (r *DBRepository) migrate(databaseDSN string) error {
+func (r *DBRepository) bootstrap(databaseDSN string) error {
     db, err := goose.OpenDBWithDriver("pgx", databaseDSN)
     if err != nil {
         slog.Error(
@@ -93,27 +100,46 @@ func (r *DBRepository) migrate(databaseDSN string) error {
     return nil
 }
 
-func (r *DBRepository) Store(url *model.URL) error {
+func (r *DBRepository) Store(urls []*model.URL) error {
     ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
     defer cancel()
+    //
+    //    _, err := r.CreateURL(ctx, queries.CreateURLParams{
+    //        LongUrl: url.Long,
+    //        BaseUrl: url.Base,
+    //        UrlID:   url.ID,
+    //    })
+    //    if err != nil {
+    //        return err
+    //    }
 
-    _, err := r.CreateURL(ctx, queries.CreateURLParams{
-        LongUrl: url.Long,
-        BaseUrl: url.Base,
-        UrlID:   url.ID,
-    })
+    tx, err := r.db.Begin()
     if err != nil {
         return err
     }
+    defer func() { _ = tx.Rollback() }()
 
-    return nil
+    qtx := r.q.WithTx(tx)
+
+    for _, url := range urls {
+        _, err := qtx.StoreURL(ctx, queries.StoreURLParams{
+            LongUrl: url.Long,
+            BaseUrl: url.Base,
+            UrlID:   url.ID,
+        })
+        if err != nil {
+            return err
+        }
+    }
+
+    return tx.Commit()
 }
 
 func (r *DBRepository) Get(id string) (*model.URL, error) {
     ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
     defer cancel()
 
-    url, err := r.GetURL(ctx, id)
+    url, err := r.q.GetURL(ctx, id)
     if err != nil {
         return nil, err
     }

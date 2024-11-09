@@ -6,13 +6,14 @@ import (
 
 type Service interface {
 	Shorten(longURL string) (*model.URL, error)
+	ShortenBatch(batch []model.BatchRequest) ([]model.BatchResponse, error)
 	Expand(id string) (*model.URL, error)
 	Close() error
 	Check() error
 }
 
 type Repository interface {
-	Store(url *model.URL) error
+	Store(urls []*model.URL) error
 	Get(id string) (*model.URL, error)
 	Close() error
 	Check() error

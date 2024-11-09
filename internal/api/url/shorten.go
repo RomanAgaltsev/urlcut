@@ -87,3 +87,70 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 			"error", err.Error())
 	}
 }
+
+func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
+	batch := make([]model.BatchRequest, 0)
+
+	dec := json.NewDecoder(r.Body)
+
+	_, err := dec.Token()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		slog.Info(
+			"failed to decode batch",
+			"error", err.Error())
+		return
+	}
+
+	for dec.More() {
+		var batchReq model.BatchRequest
+		if err := dec.Decode(&batchReq); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			slog.Info(
+				"failed to decode batch element",
+				"error", err.Error())
+			return
+		}
+		batch = append(batch, batchReq)
+	}
+
+	if len(batch) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		slog.Info("got empty batch")
+		return
+	}
+
+	batchShortened, err := h.shortener.ShortenBatch(batch)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Info(
+			"failed to short URL",
+			"error", err.Error())
+		return
+	}
+
+	enc := json.NewEncoder(w)
+	//	for _, batchelem := range batchShortened {
+	//		enc.Encode(batchelem)
+	//	}
+	err = enc.Encode(batchShortened)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Info(
+			"failed to encode batch",
+			"error", err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", ContentTypeJSON)
+	//w.Header().Set("Content-Length", strconv.Itoa(len(res)))
+	w.WriteHeader(http.StatusCreated)
+
+	//	_, err = w.Write(res)
+	//	if err != nil {
+	//		http.Error(w, err.Error(), http.StatusInternalServerError)
+	//		slog.Info(
+	//			"failed to write shorten URL to response",
+	//			"error", err.Error())
+	//	}
+}
