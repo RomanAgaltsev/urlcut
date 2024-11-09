@@ -41,6 +41,7 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
+	defer func() { _ = r.Body.Close() }()
 
 	var req model.Request
 	if err := dec.Decode(&req); err != nil {
@@ -92,6 +93,7 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 	batch := make([]model.BatchRequest, 0)
 
 	dec := json.NewDecoder(r.Body)
+	defer func() { _ = r.Body.Close() }()
 
 	_, err := dec.Token()
 	if err != nil {
@@ -129,10 +131,11 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", ContentTypeJSON)
+	w.WriteHeader(http.StatusCreated)
+
 	enc := json.NewEncoder(w)
-	//	for _, batchelem := range batchShortened {
-	//		enc.Encode(batchelem)
-	//	}
+
 	err = enc.Encode(batchShortened)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -141,16 +144,4 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 			"error", err.Error())
 		return
 	}
-
-	w.Header().Set("Content-Type", ContentTypeJSON)
-	//w.Header().Set("Content-Length", strconv.Itoa(len(res)))
-	w.WriteHeader(http.StatusCreated)
-
-	//	_, err = w.Write(res)
-	//	if err != nil {
-	//		http.Error(w, err.Error(), http.StatusInternalServerError)
-	//		slog.Info(
-	//			"failed to write shorten URL to response",
-	//			"error", err.Error())
-	//	}
 }
