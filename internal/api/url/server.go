@@ -21,9 +21,14 @@ func NewServer(shortener interfaces.Service, serverPort string) (*http.Server, e
 	router := chi.NewRouter()
 	router.Use(middleware.WithLogging)
 	router.Use(middleware.WithGzip)
-	router.Post("/", handlers.Shorten)
-	router.Post("/api/shorten", handlers.ShortenAPI)
-	router.Post("/api/shorten/batch", handlers.ShortenAPIBatch)
+
+	router.Route("/", func(r chi.Router) {
+		r.Post("/", handlers.Shorten)
+		r.Route("/api", func(r chi.Router) {
+			r.Post("/shorten", handlers.ShortenAPI)
+			r.Post("/shorten/batch", handlers.ShortenAPIBatch)
+		})
+	})
 	router.Get("/{id}", handlers.Expand)
 	router.Get("/ping", handlers.Ping)
 

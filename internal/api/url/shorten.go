@@ -44,10 +44,10 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 
 	var req model.Request
 	if err := dec.Decode(&req); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
 		slog.Info(
 			"failed to unmarshal long URL",
 			"error", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -59,19 +59,19 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 
 	url, err := h.shortener.Shorten(longURL)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		slog.Info(
 			"failed to short URL",
 			"error", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	res, err := json.Marshal(model.Response{Result: url.Short()})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		slog.Info(
 			"failed to marshal shorten URL",
 			"error", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -95,37 +95,37 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 
 	_, err := dec.Token()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
 		slog.Info(
 			"failed to decode batch",
 			"error", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	for dec.More() {
 		var batchReq model.BatchRequest
 		if err := dec.Decode(&batchReq); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
 			slog.Info(
 				"failed to decode batch element",
 				"error", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		batch = append(batch, batchReq)
 	}
 
 	if len(batch) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
 		slog.Info("got empty batch")
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	batchShortened, err := h.shortener.ShortenBatch(batch)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		slog.Info(
 			"failed to short URL",
 			"error", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
