@@ -84,11 +84,12 @@ func (mr *MockRepositoryMockRecorder) Get(id any) *gomock.Call {
 }
 
 // Store mocks base method.
-func (m *MockRepository) Store(urls []*model.URL) error {
+func (m *MockRepository) Store(urls []*model.URL) (*model.URL, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Store", urls)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*model.URL)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Store indicates an expected call of Store.

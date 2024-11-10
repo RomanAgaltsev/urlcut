@@ -3,11 +3,11 @@ package services
 import (
 	"errors"
 	"fmt"
-	"github.com/RomanAgaltsev/urlcut/internal/repository"
 
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/lib/random"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
+	"github.com/RomanAgaltsev/urlcut/internal/repository"
 )
 
 var _ interfaces.Service = (*Shortener)(nil)
@@ -40,13 +40,6 @@ func (s *Shortener) Shorten(longURL string) (*model.URL, error) {
 
 	duplicatedURL, err := s.repository.Store([]*model.URL{url})
 	if errors.Is(err, repository.ErrConflict) {
-		//		var duplURL model.URL
-		//		for _, u := range duplicatedURLs {
-		//			duplURL.Long = u.Long
-		//			duplURL.Base = u.Base
-		//			duplURL.ID = u.ID
-		//			break
-		//		}
 		return duplicatedURL, err
 	}
 	if err != nil {

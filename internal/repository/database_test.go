@@ -30,12 +30,6 @@ func TestDBRepository(t *testing.T) {
 
 	var dbRepository *DBRepository
 
-	//	dbRepository, err := NewDBRepository("")
-	//	require.NoError(t, err)
-	//
-	//	err = dbRepository.Close()
-	//	require.NoError(t, err)
-
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer func() { _ = db.Close() }()
@@ -67,7 +61,7 @@ func TestDBRepository(t *testing.T) {
 		q:  q,
 	}
 
-	err = dbRepository.Store([]*model.URL{urlS})
+	_, err = dbRepository.Store([]*model.URL{urlS})
 	require.NoError(t, err)
 
 	urlG, err := dbRepository.Get(urlID)

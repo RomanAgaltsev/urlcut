@@ -30,7 +30,7 @@ func TestShortener(t *testing.T) {
 
 	mockRepo.EXPECT().
 		Store(gomock.Any()).
-		Return(nil).
+		Return(nil, nil).
 		Times(1)
 
 	shortener, err := NewShortener(mockRepo, baseURL, idLength)
