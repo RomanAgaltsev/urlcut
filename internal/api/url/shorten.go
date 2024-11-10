@@ -28,17 +28,16 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if errors.Is(err, repository.ErrConflict) {
-		w.WriteHeader(http.StatusConflict)
-		w.Write([]byte(url.Short()))
-		return
-	}
-
 	shortURL := url.Short()
 
 	w.Header().Set("Content-Type", ContentTypeText)
 	w.Header().Set("Content-Length", strconv.Itoa(len(shortURL)))
-	w.WriteHeader(http.StatusCreated)
+
+	if errors.Is(err, repository.ErrConflict) {
+		w.WriteHeader(http.StatusConflict)
+	} else {
+		w.WriteHeader(http.StatusCreated)
+	}
 
 	_, err = w.Write([]byte(shortURL))
 	if err != nil {
@@ -67,23 +66,12 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url, err := h.shortener.Shorten(longURL)
-	if err != nil && !errors.Is(err, repository.ErrConflict) {
+	url, errShort := h.shortener.Shorten(longURL)
+	if errShort != nil && !errors.Is(errShort, repository.ErrConflict) {
 		slog.Info(
 			"failed to short URL",
-			"error", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if errors.Is(err, repository.ErrConflict) {
-		w.WriteHeader(http.StatusConflict)
-
-		res, _ := json.Marshal(model.Response{Result: url.Short()})
-		w.Header().Set("Content-Type", ContentTypeJSON)
-		w.Header().Set("Content-Length", strconv.Itoa(len(res)))
-		_, err = w.Write(res)
-
+			"error", errShort.Error())
+		http.Error(w, errShort.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -98,7 +86,12 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", ContentTypeJSON)
 	w.Header().Set("Content-Length", strconv.Itoa(len(res)))
-	w.WriteHeader(http.StatusCreated)
+
+	if errors.Is(errShort, repository.ErrConflict) {
+		w.WriteHeader(http.StatusConflict)
+	} else {
+		w.WriteHeader(http.StatusCreated)
+	}
 
 	_, err = w.Write(res)
 	if err != nil {
