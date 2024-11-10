@@ -6,7 +6,10 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 )
 
-var ErrInitRepositoryFailed = fmt.Errorf("failed to init repository")
+var (
+	ErrInitRepositoryFailed = fmt.Errorf("failed to init repository")
+	ErrConflict             = fmt.Errorf("data conflict")
+)
 
 func New(databaseDSN string, fileStoragePath string) (interfaces.Repository, error) {
 	if databaseDSN == "" {

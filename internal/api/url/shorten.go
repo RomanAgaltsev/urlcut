@@ -2,7 +2,9 @@ package url
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/RomanAgaltsev/urlcut/internal/repository"
 	"io"
 	"log/slog"
 	"net/http"
@@ -21,8 +23,14 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 	}
 
 	url, err := h.shortener.Shorten(string(longURL))
-	if err != nil {
+	if err != nil && !errors.Is(err, repository.ErrConflict) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if errors.Is(err, repository.ErrConflict) {
+		w.WriteHeader(http.StatusConflict)
+		w.Write([]byte(url.Short()))
 		return
 	}
 
@@ -60,11 +68,22 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	url, err := h.shortener.Shorten(longURL)
-	if err != nil {
+	if err != nil && !errors.Is(err, repository.ErrConflict) {
 		slog.Info(
 			"failed to short URL",
 			"error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if errors.Is(err, repository.ErrConflict) {
+		w.WriteHeader(http.StatusConflict)
+
+		res, _ := json.Marshal(model.Response{Result: url.Short()})
+		w.Header().Set("Content-Type", ContentTypeJSON)
+		w.Header().Set("Content-Length", strconv.Itoa(len(res)))
+		_, err = w.Write(res)
+
 		return
 	}
 

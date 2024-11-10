@@ -4,6 +4,8 @@ import (
     "context"
     "database/sql"
     "embed"
+    "errors"
+    "github.com/jackc/pgx/v5/pgconn"
     "log/slog"
     "time"
 
@@ -12,6 +14,7 @@ import (
     "github.com/RomanAgaltsev/urlcut/internal/repository/queries"
 
     _ "github.com/jackc/pgx/v5/stdlib"
+    "github.com/jackc/pgerrcode"
     "github.com/pressly/goose/v3"
 )
 
@@ -100,17 +103,20 @@ func (r *DBRepository) bootstrap(databaseDSN string) error {
     return nil
 }
 
-func (r *DBRepository) Store(urls []*model.URL) error {
+func (r *DBRepository) Store(urls []*model.URL) (*model.URL, error) {
     ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
     defer cancel()
 
     tx, err := r.db.Begin()
     if err != nil {
-        return err
+        return nil, err
     }
     defer func() { _ = tx.Rollback() }()
 
     qtx := r.q.WithTx(tx)
+
+    // duplicatedURLs := make([]*model.URL, 0)
+    var pgErr *pgconn.PgError
 
     for _, url := range urls {
         _, err := qtx.StoreURL(ctx, queries.StoreURLParams{
@@ -118,12 +124,41 @@ func (r *DBRepository) Store(urls []*model.URL) error {
             BaseUrl: url.Base,
             UrlID:   url.ID,
         })
+        if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+            err := tx.Rollback()
+            if err != nil {
+                return nil, err
+            }
+            //urlByLong, err := qtx.GetURLByLong(ctx, url.Long)
+            urlByLong, err := r.q.GetURLByLong(ctx, url.Long)
+            if err != nil {
+                return nil, err
+            }
+            return &model.URL{
+                Long: urlByLong.LongUrl,
+                Base: urlByLong.BaseUrl,
+                ID:   urlByLong.UrlID,
+            }, ErrConflict
+            //            duplicatedURLs = append(duplicatedURLs, &model.URL{
+            //                Long: urlByLong.LongUrl,
+            //                Base: urlByLong.BaseUrl,
+            //                ID:   urlByLong.UrlID,
+            //            })
+        }
         if err != nil {
-            return err
+            return nil, err
         }
     }
 
-    return tx.Commit()
+    //    if len(duplicatedURLs) > 0 {
+    //        err := tx.Commit()
+    //        if err != nil {
+    //            return nil, err
+    //        }
+    //        return duplicatedURLs, ErrConflict
+    //    }
+
+    return nil, tx.Commit()
 }
 
 func (r *DBRepository) Get(id string) (*model.URL, error) {

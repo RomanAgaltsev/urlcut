@@ -13,7 +13,7 @@ type Service interface {
 }
 
 type Repository interface {
-	Store(urls []*model.URL) error
+	Store(urls []*model.URL) (*model.URL, error)
 	Get(id string) (*model.URL, error)
 	Close() error
 	Check() error

@@ -27,6 +27,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getURLStmt, err = db.PrepareContext(ctx, getURL); err != nil {
 		return nil, fmt.Errorf("error preparing query GetURL: %w", err)
 	}
+	if q.getURLByLongStmt, err = db.PrepareContext(ctx, getURLByLong); err != nil {
+		return nil, fmt.Errorf("error preparing query GetURLByLong: %w", err)
+	}
 	if q.storeURLStmt, err = db.PrepareContext(ctx, storeURL); err != nil {
 		return nil, fmt.Errorf("error preparing query StoreURL: %w", err)
 	}
@@ -38,6 +41,11 @@ func (q *Queries) Close() error {
 	if q.getURLStmt != nil {
 		if cerr := q.getURLStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getURLStmt: %w", cerr)
+		}
+	}
+	if q.getURLByLongStmt != nil {
+		if cerr := q.getURLByLongStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getURLByLongStmt: %w", cerr)
 		}
 	}
 	if q.storeURLStmt != nil {
@@ -82,17 +90,19 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 }
 
 type Queries struct {
-	db           DBTX
-	tx           *sql.Tx
-	getURLStmt   *sql.Stmt
-	storeURLStmt *sql.Stmt
+	db               DBTX
+	tx               *sql.Tx
+	getURLStmt       *sql.Stmt
+	getURLByLongStmt *sql.Stmt
+	storeURLStmt     *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
-		db:           tx,
-		tx:           tx,
-		getURLStmt:   q.getURLStmt,
-		storeURLStmt: q.storeURLStmt,
+		db:               tx,
+		tx:               tx,
+		getURLStmt:       q.getURLStmt,
+		getURLByLongStmt: q.getURLByLongStmt,
+		storeURLStmt:     q.storeURLStmt,
 	}
 }

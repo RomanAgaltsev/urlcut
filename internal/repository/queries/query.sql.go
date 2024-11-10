@@ -28,6 +28,25 @@ func (q *Queries) GetURL(ctx context.Context, urlID string) (Url, error) {
 	return i, err
 }
 
+const getURLByLong = `-- name: GetURLByLong :one
+SELECT id, long_url, base_url, url_id, created_at
+FROM urls
+WHERE long_url = $1 LIMIT 1
+`
+
+func (q *Queries) GetURLByLong(ctx context.Context, longUrl string) (Url, error) {
+	row := q.queryRow(ctx, q.getURLByLongStmt, getURLByLong, longUrl)
+	var i Url
+	err := row.Scan(
+		&i.ID,
+		&i.LongUrl,
+		&i.BaseUrl,
+		&i.UrlID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const storeURL = `-- name: StoreURL :one
 INSERT INTO urls (long_url, base_url, url_id)
 VALUES ($1, $2, $3) RETURNING id, long_url, base_url, url_id, created_at
