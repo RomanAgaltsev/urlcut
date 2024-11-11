@@ -12,6 +12,7 @@ import (
     "github.com/RomanAgaltsev/urlcut/internal/model"
     "github.com/RomanAgaltsev/urlcut/internal/repository/queries"
 
+    "github.com/cenkalti/backoff/v4"
     "github.com/jackc/pgerrcode"
     "github.com/jackc/pgx/v5/pgconn"
     _ "github.com/jackc/pgx/v5/stdlib"
@@ -118,11 +119,14 @@ func (r *DBRepository) Store(urls []*model.URL) (*model.URL, error) {
     var pgErr *pgconn.PgError
 
     for _, url := range urls {
-        _, err := qtx.StoreURL(ctx, queries.StoreURLParams{
-            LongUrl: url.Long,
-            BaseUrl: url.Base,
-            UrlID:   url.ID,
-        })
+        err := backoff.Retry(func() error {
+            _, errbo := qtx.StoreURL(ctx, queries.StoreURLParams{
+                LongUrl: url.Long,
+                BaseUrl: url.Base,
+                UrlID:   url.ID,
+            })
+            return errbo
+        }, backoff.NewExponentialBackOff())
         if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
             err := tx.Rollback()
             if err != nil {
@@ -150,7 +154,9 @@ func (r *DBRepository) Get(id string) (*model.URL, error) {
     ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
     defer cancel()
 
-    url, err := r.q.GetURL(ctx, id)
+    url, err := backoff.RetryWithData(func() (queries.Url, error) {
+        return r.q.GetURL(ctx, id)
+    }, backoff.NewExponentialBackOff())
     if err != nil {
         return nil, err
     }
