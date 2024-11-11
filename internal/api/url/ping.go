@@ -2,7 +2,8 @@ package url
 
 import "net/http"
 
-func (h *Handlers) Ping(w http.ResponseWriter, r *http.Request) {
+// Ping выполняет обработку запроса на пинг хранилища.
+func (h *Handlers) Ping(w http.ResponseWriter, _ *http.Request) {
 	if err := h.shortener.Check(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

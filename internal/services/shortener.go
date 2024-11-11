@@ -10,16 +10,22 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
 )
 
+// Неиспользуемая переменная для проверки соответствия сокращателя интерфейсу сервиса
 var _ interfaces.Service = (*Shortener)(nil)
+
+// ErrInitServiceFailed ошибка инициализации сервиса сокращателя.
 var ErrInitServiceFailed = fmt.Errorf("failed to init service")
 
+// Shortener реализует сервис сокращателя ссылок.
 type Shortener struct {
-	repository interfaces.Repository
-	baseURL    string
-	idLenght   int
+	repository interfaces.Repository // Репозиторий (интерфейс) для хранения URL
+	baseURL    string                // Базовый адрес в сокращенном URL
+	idLenght   int                   // Длина идентификатора в сокращенном URL
 }
 
+// NewShortener создает новый сокращатель ссылок.
 func NewShortener(repository interfaces.Repository, baseURL string, idLength int) (*Shortener, error) {
+	// Считаем, что без базового адреса и без идентификатора сокращенной ссылки быть не может
 	if baseURL == "" || idLength == 0 {
 		return nil, ErrInitServiceFailed
 	}
@@ -31,15 +37,19 @@ func NewShortener(repository interfaces.Repository, baseURL string, idLength int
 	}, nil
 }
 
+// Shorten сокращает переданную ссылку.
 func (s *Shortener) Shorten(longURL string) (*model.URL, error) {
+	// Создаем структуру URL
 	url := &model.URL{
 		Long: longURL,
 		Base: s.baseURL,
 		ID:   random.String(s.idLenght),
 	}
 
+	// Сохраняем структуру URL в репозитории
 	duplicatedURL, err := s.repository.Store([]*model.URL{url})
 	if errors.Is(err, repository.ErrConflict) {
+		// При наличии конфликта должна вернуться ранее сохраненная сокращенная ссылка
 		return duplicatedURL, err
 	}
 	if err != nil {
@@ -49,10 +59,14 @@ func (s *Shortener) Shorten(longURL string) (*model.URL, error) {
 	return url, nil
 }
 
+// ShortenBatch сокращает переданный батч ссылок.
 func (s *Shortener) ShortenBatch(batch []model.BatchRequest) ([]model.BatchResponse, error) {
+	// Создаем слайс для хранения сокращенных ссылок батча
 	batchShortened := make([]model.BatchResponse, 0, len(batch))
+	// Создаем слайс URL
 	urls := make([]*model.URL, 0, len(batch))
 
+	// Обходим батч, создаем сокращенные ссылки и сохраняем в слайс URL
 	for _, batchReq := range batch {
 		urls = append(urls, &model.URL{
 			Long:   batchReq.OriginalURL,
@@ -62,11 +76,13 @@ func (s *Shortener) ShortenBatch(batch []model.BatchRequest) ([]model.BatchRespo
 		})
 	}
 
+	// Сохраняем слайс URL в БД
 	_, err := s.repository.Store(urls)
 	if err != nil {
 		return batchShortened, err
 	}
 
+	// Перекладываем сокращенные ссылки в слайс батча для возврата
 	for _, url := range urls {
 		batchShortened = append(batchShortened, model.BatchResponse{
 			CorrelationID: url.CorrID,
@@ -77,6 +93,7 @@ func (s *Shortener) ShortenBatch(batch []model.BatchRequest) ([]model.BatchRespo
 	return batchShortened, nil
 }
 
+// Expand возвращает оригинальную ссылку по переданному идентификатору.
 func (s *Shortener) Expand(id string) (*model.URL, error) {
 	url, err := s.repository.Get(id)
 	if err != nil {
@@ -86,10 +103,12 @@ func (s *Shortener) Expand(id string) (*model.URL, error) {
 	return url, nil
 }
 
+// Close закрывает репозиторий ссылок сокращателя.
 func (s *Shortener) Close() error {
 	return s.repository.Close()
 }
 
+// Check выполняет пинг репозитория ссылок сокращателя.
 func (s *Shortener) Check() error {
 	return s.repository.Check()
 }

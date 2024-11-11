@@ -5,6 +5,7 @@ import (
 	"math/rand"
 )
 
+// String формирует последовательность английских больших, маленьких букв и цифр заданной длины.
 func String(lenght int) string {
 	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 

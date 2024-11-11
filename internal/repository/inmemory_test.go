@@ -1,10 +1,11 @@
 package repository
 
 import (
+	"testing"
+
 	"github.com/RomanAgaltsev/urlcut/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestInMemoryRepository(t *testing.T) {

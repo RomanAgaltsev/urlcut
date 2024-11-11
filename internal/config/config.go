@@ -6,16 +6,19 @@ import (
 	"os"
 )
 
+// ErrInitConfigFailed - ошибка инициации конфигурации.
 var ErrInitConfigFailed = fmt.Errorf("failed to init config")
 
+// Config - структура конфигурации приложения.
 type Config struct {
-	ServerPort      string
-	BaseURL         string
-	FileStoragePath string
-	DatabaseDSN     string
-	IDlength        int
+	ServerPort      string // Адрес HTTP сервера и порт
+	BaseURL         string // Базовый адрес сокращенного URL
+	FileStoragePath string // Путь к файловому хранилищу
+	DatabaseDSN     string // Строка соединения с БД
+	IDlength        int    // Длина идентификатора в сокращенном URL
 }
 
+// configBuilder - строитель конфигурации приложения.
 type configBuilder struct {
 	serverPort      string `env:"SERVER_ADDRESS"`
 	baseURL         string `env:"BASE_URL"`
@@ -24,10 +27,12 @@ type configBuilder struct {
 	idLength        int
 }
 
+// newConfigBuilder создает нового строителя конфигурации приложения.
 func newConfigBuilder() *configBuilder {
 	return &configBuilder{}
 }
 
+// setDefaults устанавливает значения конфигурации приложения по умолчанию.
 func (cb *configBuilder) setDefaults() error {
 	cb.serverPort = "localhost:8080"
 	cb.baseURL = "http://localhost:8080"
@@ -38,6 +43,7 @@ func (cb *configBuilder) setDefaults() error {
 	return nil
 }
 
+// setFlags устанавливает значения конфигурации приложения из параметров командной строки.
 func (cb *configBuilder) setFlags() error {
 	flag.StringVar(&cb.serverPort, "a", cb.serverPort, "address and port to run server")
 	flag.StringVar(&cb.baseURL, "b", cb.baseURL, "basic address of shortened URL")
@@ -49,6 +55,7 @@ func (cb *configBuilder) setFlags() error {
 	return nil
 }
 
+// setEnvs устанавливает значения конфигурации приложения из переменных окружения.
 func (cb *configBuilder) setEnvs() error {
 	sp := os.Getenv("SERVER_ADDRESS")
 	if sp != "" {
@@ -73,6 +80,7 @@ func (cb *configBuilder) setEnvs() error {
 	return nil
 }
 
+// build строит конфигурацию приложения.
 func (cb *configBuilder) build() *Config {
 	return &Config{
 		ServerPort:      cb.serverPort,
@@ -83,6 +91,7 @@ func (cb *configBuilder) build() *Config {
 	}
 }
 
+// Get возвращает конфигурацию приложения.
 func Get() (*Config, error) {
 	cb := newConfigBuilder()
 
