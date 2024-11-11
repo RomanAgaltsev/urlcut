@@ -1,7 +1,7 @@
 package url
 
 import (
-	"github.com/RomanAgaltsev/urlcut/internal/service"
+	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 )
 
 const (
@@ -10,11 +10,11 @@ const (
 )
 
 type Handlers struct {
-	service service.URLService
+	shortener interfaces.Service
 }
 
-func New(service service.URLService) *Handlers {
+func NewHandlers(shortener interfaces.Service) *Handlers {
 	return &Handlers{
-		service: service,
+		shortener: shortener,
 	}
 }

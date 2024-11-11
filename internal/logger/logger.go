@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// Initialize инициализирует логер slog+zap.
 func Initialize() error {
 	encoderConfig := zapcore.EncoderConfig{
 		TimeKey:        "timestamp",
@@ -30,7 +31,7 @@ func Initialize() error {
 		OutputPaths:      []string{"stdout"},
 		ErrorOutputPaths: []string{"stderr"},
 	}
-	
+
 	logger, err := config.Build()
 	if err != nil {
 		return err

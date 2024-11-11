@@ -1,12 +1,23 @@
 package repository
 
 import (
-	"github.com/RomanAgaltsev/urlcut/internal/model"
+	"fmt"
+
+	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 )
 
-type URLRepository interface {
-	Store(url *model.URL) error
-	Get(id string) (*model.URL, error)
-	SaveState() error
-	RestoreState() error
+var (
+	ErrInitRepositoryFailed = fmt.Errorf("failed to init repository")
+	ErrConflict             = fmt.Errorf("data conflict")
+)
+
+func New(databaseDSN string, fileStoragePath string) (interfaces.Repository, error) {
+	if databaseDSN == "" {
+		return NewInMemoryRepository(fileStoragePath), nil
+	}
+	dbRepository, err := NewDBRepository(databaseDSN)
+	if err != nil {
+		return nil, ErrInitRepositoryFailed
+	}
+	return dbRepository, nil
 }

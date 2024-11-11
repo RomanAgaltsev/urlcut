@@ -10,10 +10,11 @@ import (
 	"testing"
 
 	"github.com/RomanAgaltsev/urlcut/internal/api/middleware"
+	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/logger"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
-	repositoryurl "github.com/RomanAgaltsev/urlcut/internal/repository/url"
-	serviceurl "github.com/RomanAgaltsev/urlcut/internal/service/url"
+	"github.com/RomanAgaltsev/urlcut/internal/repository"
+	"github.com/RomanAgaltsev/urlcut/internal/services"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-resty/resty/v2"
@@ -22,37 +23,42 @@ import (
 )
 
 type helper struct {
-	baseURL  string
-	idLength int
-	repo     *repositoryurl.InMemoryRepository
-	service  *serviceurl.ShortenerService
-	router   *chi.Mux
-	handlers *Handlers
+	serverPort string
+	baseURL    string
+	idLength   int
+	router     *chi.Mux
+	handlers   *Handlers
+
+	shortener  interfaces.Service
+	repository interfaces.Repository
 }
 
-func newHelper() *helper {
+func newHelper(t *testing.T) *helper {
 	const (
-		baseURL  = "http://localhost:8080"
-		idLength = 8
+		serverPort = "localhost:8080"
+		baseURL    = "http://localhost:8080"
+		idLength   = 8
 	)
 
-	repo := repositoryurl.New("storage.json")
-	service := serviceurl.New(repo, baseURL, idLength)
+	repo := repository.NewInMemoryRepository("storage.json")
+	service, err := services.NewShortener(repo, baseURL, idLength)
+	require.NoError(t, err)
 	router := chi.NewRouter()
-	handlers := New(service)
+	handlers := NewHandlers(service)
 
 	return &helper{
-		baseURL:  baseURL,
-		idLength: idLength,
-		repo:     repo,
-		service:  service,
-		router:   router,
-		handlers: handlers,
+		serverPort: serverPort,
+		baseURL:    baseURL,
+		idLength:   idLength,
+		repository: repo,
+		shortener:  service,
+		router:     router,
+		handlers:   handlers,
 	}
 }
 
 func TestShortenHandler(t *testing.T) {
-	hlp := newHelper()
+	hlp := newHelper(t)
 	hlp.router.Post("/", hlp.handlers.Shorten)
 
 	httpSrv := httptest.NewServer(hlp.router)
@@ -97,7 +103,7 @@ func TestShortenHandler(t *testing.T) {
 }
 
 func TestShortenAPIHandler(t *testing.T) {
-	hlp := newHelper()
+	hlp := newHelper(t)
 	hlp.router.Post("/api/shorten", hlp.handlers.ShortenAPI)
 
 	httpSrv := httptest.NewServer(hlp.router)
@@ -183,8 +189,131 @@ func TestShortenAPIHandler(t *testing.T) {
 	})
 }
 
+func TestShortenAPIBatchHandler(t *testing.T) {
+	hlp := newHelper(t)
+	hlp.router.Post("/api/shorten/batch", hlp.handlers.ShortenAPIBatch)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	t.Run("[POST] [urls]", func(t *testing.T) {
+		type request struct {
+			CorrelationID string `json:"correlation_id"`
+			OriginalURL   string `json:"original_url"`
+		}
+
+		type response struct {
+			CorrelationID string `json:"correlation_id"`
+			ShortURL      string `json:"short_url"`
+		}
+
+		requests := []request{
+			{
+				CorrelationID: "kj24njF2",
+				OriginalURL:   "https://practicum.yandex.ru/",
+			},
+			{
+				CorrelationID: "87sdFin3",
+				OriginalURL:   "https://translate.yandex.ru/",
+			},
+		}
+
+		reqFinds := map[string]bool{"https://practicum.yandex.ru/": false, "https://translate.yandex.ru/": false}
+
+		req := resty.New().R()
+		req.Method = http.MethodPost
+		req.URL = httpSrv.URL + "/api/shorten/batch"
+
+		reqBytes, _ := json.Marshal(requests)
+
+		res, err := req.
+			SetHeader("Content-Type", ContentTypeJSON).
+			SetBody(bytes.NewReader(reqBytes)).
+			Send()
+		assert.NoError(t, err)
+
+		assert.Equal(t, http.StatusCreated, res.StatusCode())
+		assert.Equal(t, ContentTypeJSON, res.Header().Get("Content-Type"))
+
+		dec := json.NewDecoder(bytes.NewReader(res.Body()))
+		var responses []response
+		err = dec.Decode(&responses)
+		require.NoError(t, err)
+
+		assert.Equal(t, len(requests), len(responses))
+
+		for _, req := range requests {
+			for _, res := range responses {
+				if req.CorrelationID == res.CorrelationID {
+					reqFinds[req.OriginalURL] = true
+					assert.True(t, strings.HasPrefix(res.ShortURL, hlp.baseURL))
+				}
+			}
+		}
+
+		for url, found := range reqFinds {
+			assert.Truef(t, found, "url [%s] not found in response", url)
+		}
+
+	})
+
+	t.Run("[POST] [nil body]", func(t *testing.T) {
+		req := resty.New().R()
+		req.Method = http.MethodPost
+		req.URL = httpSrv.URL + "/api/shorten/batch"
+
+		res, err := req.
+			SetHeader("Content-Type", ContentTypeJSON).
+			Send()
+		assert.NoError(t, err)
+
+		assert.Equal(t, http.StatusInternalServerError, res.StatusCode())
+	})
+
+	t.Run("[POST] [Bad body]", func(t *testing.T) {
+		request := struct {
+			Dummy string
+		}{
+			Dummy: "Hi there!",
+		}
+		reqBytes, _ := json.Marshal(request)
+
+		req := resty.New().R()
+		req.Method = http.MethodPost
+		req.URL = httpSrv.URL + "/api/shorten/batch"
+
+		res, err := req.
+			SetHeader("Content-Type", ContentTypeJSON).
+			SetBody(bytes.NewReader(reqBytes)).
+			Send()
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusInternalServerError, res.StatusCode())
+	})
+
+	t.Run("[POST] [Empty body]", func(t *testing.T) {
+		type request struct {
+			CorrelationID string `json:"correlation_id"`
+			OriginalURL   string `json:"original_url"`
+		}
+
+		requests := []request{}
+		reqBytes, _ := json.Marshal(requests)
+
+		req := resty.New().R()
+		req.Method = http.MethodPost
+		req.URL = httpSrv.URL + "/api/shorten/batch"
+
+		res, err := req.
+			SetHeader("Content-Type", ContentTypeJSON).
+			SetBody(bytes.NewReader(reqBytes)).
+			Send()
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode())
+	})
+}
+
 func TestExpandHandler(t *testing.T) {
-	hlp := newHelper()
+	hlp := newHelper(t)
 	hlp.router.Post("/", hlp.handlers.Shorten)
 	hlp.router.Get("/{id}", hlp.handlers.Expand)
 
@@ -232,13 +361,39 @@ func TestExpandHandler(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("[GET] [not found]", func(t *testing.T) {
+		res, err := resty.
+			New().
+			R().
+			Get(httpSrv.URL + "/h7Ds18sD")
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, res.StatusCode())
+	})
+}
+
+func TestPingHandler(t *testing.T) {
+	hlp := newHelper(t)
+	hlp.router.Get("/ping", hlp.handlers.Ping)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	t.Run("[GET] [ping]", func(t *testing.T) {
+		res, err := resty.
+			New().
+			R().
+			Get(httpSrv.URL + "/ping")
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode())
+	})
 }
 
 func TestLoggerMiddleWare(t *testing.T) {
 	err := logger.Initialize()
 	require.NoError(t, err)
 
-	hlp := newHelper()
+	hlp := newHelper(t)
 	hlp.router.Use(middleware.WithLogging)
 	hlp.router.Post("/", hlp.handlers.Shorten)
 
@@ -267,7 +422,7 @@ func TestLoggerMiddleWare(t *testing.T) {
 }
 
 func TestCompressMiddleware(t *testing.T) {
-	hlp := newHelper()
+	hlp := newHelper(t)
 	hlp.router.Use(middleware.WithGzip)
 	hlp.router.Post("/compress", hlp.handlers.Shorten)
 

@@ -3,42 +3,51 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/RomanAgaltsev/urlcut/internal/api/middleware"
-	apiurl "github.com/RomanAgaltsev/urlcut/internal/api/url"
+	"github.com/RomanAgaltsev/urlcut/internal/api/url"
 	"github.com/RomanAgaltsev/urlcut/internal/config"
+	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/logger"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
-	repositoryurl "github.com/RomanAgaltsev/urlcut/internal/repository/url"
-	services "github.com/RomanAgaltsev/urlcut/internal/service"
-	servicesurl "github.com/RomanAgaltsev/urlcut/internal/service/url"
-
-	"github.com/go-chi/chi/v5"
+	"github.com/RomanAgaltsev/urlcut/internal/services"
 )
 
-var (
-	ErrInitConfigFailed  = fmt.Errorf("failed to init config")
-	ErrInitServiceFailed = fmt.Errorf("failed to init service")
-	ErrInitServerFailed  = fmt.Errorf("failed to init HTTP server")
-)
-
+// App является структурой всего приложения.
 type App struct {
-	cfg     *config.Config
-	repo    repository.URLRepository
-	service services.URLService
-	server  *http.Server
+	config    *config.Config
+	server    *http.Server
+	shortener interfaces.Service
 }
 
+// New создает новое приложение.
 func New() (*App, error) {
 	app := &App{}
 
-	err := app.init()
+	// Инициализация конфигурации
+	err := app.initConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// Инициализация логера
+	err = app.initLogger()
+	if err != nil {
+		return nil, err
+	}
+
+	// Инициализация сервиса сокращателя ссылок
+	err = app.initShortener()
+	if err != nil {
+		return nil, err
+	}
+
+	// Инициализация HTTP сервера
+	err = app.initHTTPServer()
 	if err != nil {
 		return nil, err
 	}
@@ -46,35 +55,18 @@ func New() (*App, error) {
 	return app, nil
 }
 
-func (a *App) init() error {
-	appInits := []func() error{
-		a.initConfig,
-		a.initLogger,
-		a.initRepository,
-		a.initService,
-		a.initHTTPServer,
-	}
-
-	for _, appInit := range appInits {
-		err := appInit()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
+// initConfig инициирует конфигурацию приложения.
 func (a *App) initConfig() error {
 	cfg, err := config.Get()
 	if err != nil {
-		return ErrInitConfigFailed
+		return err
 	}
-	a.cfg = cfg
+	a.config = cfg
 
 	return nil
 }
 
+// initLogger инициализирует логер.
 func (a *App) initLogger() error {
 	err := logger.Initialize()
 	if err != nil {
@@ -84,57 +76,49 @@ func (a *App) initLogger() error {
 	return nil
 }
 
-func (a *App) initRepository() error {
-	inMemoRepo := repositoryurl.New(a.cfg.FileStoragePath)
-
-	if err := inMemoRepo.RestoreState(); err != nil {
+// initShortener инициализирует сервис сокращателя ссылок, включая хранилище.
+func (a *App) initShortener() error {
+	repo, err := repository.New(a.config.DatabaseDSN, a.config.FileStoragePath)
+	if err != nil {
 		return err
 	}
-	a.repo = inMemoRepo
 
-	return nil
-}
-
-func (a *App) initService() error {
-	if a.cfg.BaseURL == "" || a.cfg.IDlength == 0 {
-		return ErrInitServiceFailed
+	shortener, err := services.NewShortener(repo, a.config.BaseURL, a.config.IDlength)
+	if err != nil {
+		return err
 	}
 
-	a.service = servicesurl.New(a.repo, a.cfg.BaseURL, a.cfg.IDlength)
+	a.shortener = shortener
 
 	return nil
 }
 
+// initHTTPServer инициализирует HTTP сервер.
 func (a *App) initHTTPServer() error {
-	if a.cfg.ServerPort == "" {
-		return ErrInitServerFailed
+	server, err := url.NewServer(a.shortener, a.config.ServerPort)
+	if err != nil {
+		return err
 	}
-	handlers := apiurl.New(a.service)
+	a.server = server
 
-	router := chi.NewRouter()
-	router.Use(middleware.WithLogging)
-	router.Use(middleware.WithGzip)
-	router.Post("/", handlers.Shorten)
-	router.Post("/api/shorten", handlers.ShortenAPI)
-	router.Get("/{id}", handlers.Expand)
-
-	a.server = &http.Server{
-		Addr:    a.cfg.ServerPort,
-		Handler: router,
-	}
 	return nil
 }
 
+// Run вызывает запуск приложения.
 func (a *App) Run() error {
 	return a.runShortenerApp()
 }
 
+// runShortenerApp запускает приложение.
 func (a *App) runShortenerApp() error {
+	// Создаем каналы для Graceful Shutdown
 	done := make(chan bool, 1)
 	quit := make(chan os.Signal, 1)
 
+	// Сигнал прерывания
 	signal.Notify(quit, os.Interrupt)
 
+	// Graceful Shutdown выполняем в горутине
 	go func() {
 		<-quit
 		slog.Info("shutting down HTTP server")
@@ -142,6 +126,7 @@ func (a *App) runShortenerApp() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
+		// Выключаем HTTP сервер
 		if err := a.server.Shutdown(ctx); err != nil {
 			slog.Error(
 				"HTTP server shutdown error",
@@ -149,9 +134,10 @@ func (a *App) runShortenerApp() error {
 			)
 		}
 
-		if err := a.repo.SaveState(); err != nil {
+		// Выключаем сервис сокращателя, включая закрытие хранилища
+		if err := a.shortener.Close(); err != nil {
 			slog.Error(
-				"failed to save url storage to file",
+				"failed to close shortener service",
 				slog.String("error", err.Error()),
 			)
 		}
@@ -163,6 +149,8 @@ func (a *App) runShortenerApp() error {
 		"starting HTTP server",
 		"addr", a.server.Addr,
 	)
+
+	// Запускаем HTTP сервер
 	if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error(
 			"HTTP server error",

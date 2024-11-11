@@ -35,6 +35,7 @@ func (c *compressReader) Close() error {
 	return c.gzreader.Close()
 }
 
+// WithGzip выполняет роль миддлваре сжатия данных
 func WithGzip(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
