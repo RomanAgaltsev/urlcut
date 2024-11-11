@@ -136,7 +136,9 @@ func (r *DBRepository) Store(urls []*model.URL) (*model.URL, error) {
                 if errrb != nil {
                     return ce, errrb
                 }
-                urlByLong, errgbl := r.q.GetURLByLong(ctx, url.Long)
+                urlByLong, errgbl := backoff.RetryWithData(func() (queries.Url, error) {
+                    return r.q.GetURLByLong(ctx, url.Long)
+                }, backoff.NewExponentialBackOff())
                 if errgbl != nil {
                     return ce, errgbl
                 }
