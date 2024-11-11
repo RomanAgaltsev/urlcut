@@ -1,6 +1,7 @@
 package url
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -10,7 +11,10 @@ func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
 
 	url, err := h.shortener.Expand(urlID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		slog.Info(
+			"failed to expand URL",
+			"error", err.Error())
+		http.Error(w, "please look at logs", http.StatusNotFound)
 		return
 	}
 

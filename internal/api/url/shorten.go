@@ -3,7 +3,6 @@ package url
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -24,7 +23,10 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 
 	url, err := h.shortener.Shorten(string(longURL))
 	if err != nil && !errors.Is(err, repository.ErrConflict) {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Info(
+			"failed to short URL",
+			"error", err.Error())
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
 
@@ -44,6 +46,7 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 		slog.Info(
 			"failed to write shorten URL to response",
 			"error", err.Error())
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
 	}
 }
 
@@ -56,7 +59,7 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 		slog.Info(
 			"failed to unmarshal long URL",
 			"error", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
 
@@ -71,7 +74,7 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 		slog.Info(
 			"failed to short URL",
 			"error", errShort.Error())
-		http.Error(w, errShort.Error(), http.StatusInternalServerError)
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
 
@@ -80,7 +83,7 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 		slog.Info(
 			"failed to marshal shorten URL",
 			"error", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
 
@@ -95,10 +98,10 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 
 	_, err = w.Write(res)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		slog.Info(
 			"failed to write shorten URL to response",
 			"error", err.Error())
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
 	}
 }
 
@@ -113,7 +116,7 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 		slog.Info(
 			"failed to decode batch",
 			"error", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
 
@@ -123,17 +126,15 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 			slog.Info(
 				"failed to decode batch element",
 				"error", err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "please look at logs", http.StatusInternalServerError)
 			return
 		}
 		batch = append(batch, batchReq)
 	}
 
-	slog.String("BATCH", fmt.Sprintf("%v", batch))
-
 	if len(batch) == 0 {
 		slog.Info("got empty batch")
-		http.Error(w, "empty batch", http.StatusBadRequest)
+		http.Error(w, "please look at logs", http.StatusBadRequest)
 		return
 	}
 
@@ -142,7 +143,7 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 		slog.Info(
 			"failed to short URL",
 			"error", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
 
@@ -153,10 +154,10 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 
 	err = enc.Encode(batchShortened)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		slog.Info(
 			"failed to encode batch",
 			"error", err.Error())
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
 }
