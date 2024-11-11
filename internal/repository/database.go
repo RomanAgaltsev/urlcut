@@ -24,6 +24,11 @@ var _ interfaces.Repository = (*DBRepository)(nil)
 //go:embed migrations/*.sql
 var embedMigrations embed.FS
 
+type conflictError struct {
+    url queries.Url
+    err error
+}
+
 type DBRepository struct {
     db *sql.DB
     q  *queries.Queries
@@ -105,7 +110,7 @@ func (r *DBRepository) bootstrap(databaseDSN string) error {
 }
 
 func (r *DBRepository) Store(urls []*model.URL) (*model.URL, error) {
-    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
 
     tx, err := r.db.Begin()
@@ -119,31 +124,40 @@ func (r *DBRepository) Store(urls []*model.URL) (*model.URL, error) {
     var pgErr *pgconn.PgError
 
     for _, url := range urls {
-        err := backoff.Retry(func() error {
+        f := func() (conflictError, error) {
+            var ce conflictError
             _, errbo := qtx.StoreURL(ctx, queries.StoreURLParams{
                 LongUrl: url.Long,
                 BaseUrl: url.Base,
                 UrlID:   url.ID,
             })
-            return errbo
-        }, backoff.NewExponentialBackOff())
-        if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-            err := tx.Rollback()
-            if err != nil {
-                return nil, err
+            if errors.As(errbo, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+                errrb := tx.Rollback()
+                if errrb != nil {
+                    return ce, errrb
+                }
+                urlByLong, errgbl := r.q.GetURLByLong(ctx, url.Long)
+                if errgbl != nil {
+                    return ce, errgbl
+                }
+                return conflictError{
+                    url: urlByLong,
+                    err: ErrConflict,
+                }, nil
             }
-            urlByLong, err := r.q.GetURLByLong(ctx, url.Long)
-            if err != nil {
-                return nil, err
-            }
-            return &model.URL{
-                Long: urlByLong.LongUrl,
-                Base: urlByLong.BaseUrl,
-                ID:   urlByLong.UrlID,
-            }, ErrConflict
+            return ce, errbo
         }
+
+        conflError, err := backoff.RetryWithData(f, backoff.NewExponentialBackOff())
         if err != nil {
             return nil, err
+        }
+
+        if errors.Is(conflError.err, ErrConflict) {
+            return &model.URL{
+                Long: conflError.url.LongUrl,
+                Base: conflError.url.BaseUrl,
+                ID:   conflError.url.UrlID}, conflError.err
         }
     }
 
@@ -151,7 +165,7 @@ func (r *DBRepository) Store(urls []*model.URL) (*model.URL, error) {
 }
 
 func (r *DBRepository) Get(id string) (*model.URL, error) {
-    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
 
     url, err := backoff.RetryWithData(func() (queries.Url, error) {
