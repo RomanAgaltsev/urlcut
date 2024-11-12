@@ -3,13 +3,14 @@ package url
 import (
 	"log/slog"
 	"net/http"
-	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // Expand выполняет обработку запроса на получение оригинального URL.
 func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
-	// Отсекаем слэш
-	urlID := strings.TrimPrefix(r.URL.Path, "/")
+	// Получаем идентификатор из параметров URL
+	urlID := chi.URLParam(r, "id")
 
 	// Получаем URL по идентификатору
 	url, err := h.shortener.Expand(urlID)
