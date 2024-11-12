@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/RomanAgaltsev/urlcut/internal/database/queries"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
-	"github.com/RomanAgaltsev/urlcut/internal/repository/queries"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
