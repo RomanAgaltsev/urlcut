@@ -2,9 +2,11 @@ package url
 
 import (
 	"fmt"
+
 	"net/http"
 
 	"github.com/RomanAgaltsev/urlcut/internal/api/middleware"
+	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 
 	"github.com/go-chi/chi/v5"
@@ -14,14 +16,14 @@ import (
 var ErrInitServerFailed = fmt.Errorf("failed to init HTTP server")
 
 // NewServer создает новый HTTP сервер с установкой обработчиков и роутера
-func NewServer(shortener interfaces.Service, serverPort string) (*http.Server, error) {
+func NewServer(shortener interfaces.Service, cfg *config.Config) (*http.Server, error) {
 	// Если не передали, то ошибка - по умолчанию в конфиге должен быть
-	if serverPort == "" {
+	if cfg.ServerPort == "" {
 		return nil, ErrInitServerFailed
 	}
 
 	// Создаем обработчики
-	handlers := NewHandlers(shortener)
+	handlers := NewHandlers(shortener, cfg)
 
 	// Создаем роутер
 	router := chi.NewRouter()
@@ -40,7 +42,7 @@ func NewServer(shortener interfaces.Service, serverPort string) (*http.Server, e
 	router.Get("/ping", handlers.Ping)
 
 	return &http.Server{
-		Addr:    serverPort,
+		Addr:    cfg.ServerPort,
 		Handler: router,
 	}, nil
 }

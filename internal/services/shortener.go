@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/lib/random"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
@@ -19,21 +20,19 @@ var ErrInitServiceFailed = fmt.Errorf("failed to init service")
 // Shortener реализует сервис сокращателя ссылок.
 type Shortener struct {
 	repository interfaces.Repository // Репозиторий (интерфейс) для хранения URL
-	baseURL    string                // Базовый адрес в сокращенном URL
-	idLenght   int                   // Длина идентификатора в сокращенном URL
+	cfg        *config.Config        // Конфигурация приложения
 }
 
 // NewShortener создает новый сокращатель ссылок.
-func NewShortener(repository interfaces.Repository, baseURL string, idLength int) (*Shortener, error) {
+func NewShortener(repository interfaces.Repository, cfg *config.Config) (*Shortener, error) {
 	// Считаем, что без базового адреса и без идентификатора сокращенной ссылки быть не может
-	if baseURL == "" || idLength == 0 {
+	if cfg.BaseURL == "" || cfg.IDlength == 0 {
 		return nil, ErrInitServiceFailed
 	}
 
 	return &Shortener{
 		repository: repository,
-		baseURL:    baseURL,
-		idLenght:   idLength,
+		cfg:        cfg,
 	}, nil
 }
 
@@ -42,8 +41,8 @@ func (s *Shortener) Shorten(longURL string) (*model.URL, error) {
 	// Создаем структуру URL
 	url := &model.URL{
 		Long: longURL,
-		Base: s.baseURL,
-		ID:   random.String(s.idLenght),
+		Base: s.cfg.BaseURL,
+		ID:   random.String(s.cfg.IDlength),
 	}
 
 	// Сохраняем структуру URL в репозитории
@@ -70,8 +69,8 @@ func (s *Shortener) ShortenBatch(batch []model.BatchRequest) ([]model.BatchRespo
 	for _, batchReq := range batch {
 		urls = append(urls, &model.URL{
 			Long:   batchReq.OriginalURL,
-			Base:   s.baseURL,
-			ID:     random.String(s.idLenght),
+			Base:   s.cfg.BaseURL,
+			ID:     random.String(s.cfg.IDlength),
 			CorrID: batchReq.CorrelationID,
 		})
 	}
@@ -106,9 +105,4 @@ func (s *Shortener) Expand(id string) (*model.URL, error) {
 // Close закрывает репозиторий ссылок сокращателя.
 func (s *Shortener) Close() error {
 	return s.repository.Close()
-}
-
-// Check выполняет пинг репозитория ссылок сокращателя.
-func (s *Shortener) Check() error {
-	return s.repository.Check()
 }

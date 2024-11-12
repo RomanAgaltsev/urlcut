@@ -63,11 +63,3 @@ func (r *InMemoryRepository) Get(id string) (*model.URL, error) {
 func (r *InMemoryRepository) Close() error {
 	return writeToFile(r.f, r.m)
 }
-
-// Check проверяет доступность in memory репозитория.
-func (r *InMemoryRepository) Check() error {
-	if r.m == nil {
-		return ErrStorageUnavailable
-	}
-	return nil
-}

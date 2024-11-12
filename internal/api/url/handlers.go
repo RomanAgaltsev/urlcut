@@ -1,6 +1,7 @@
 package url
 
 import (
+	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 )
 
@@ -11,10 +12,12 @@ const (
 
 type Handlers struct {
 	shortener interfaces.Service
+	cfg       *config.Config
 }
 
-func NewHandlers(shortener interfaces.Service) *Handlers {
+func NewHandlers(shortener interfaces.Service, cfg *config.Config) *Handlers {
 	return &Handlers{
 		shortener: shortener,
+		cfg:       cfg,
 	}
 }

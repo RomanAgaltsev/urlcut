@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/database"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 )
@@ -14,16 +15,16 @@ var (
 	ErrConflict             = fmt.Errorf("data conflict")
 )
 
-func New(databaseDSN string, fileStoragePath string) (interfaces.Repository, error) {
-	if databaseDSN == "" {
-		return NewInMemoryRepository(fileStoragePath), nil
+func New(cfg *config.Config) (interfaces.Repository, error) {
+	if cfg.DatabaseDSN == "" {
+		return NewInMemoryRepository(cfg.FileStoragePath), nil
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// Открываем новое соединение
-	db, err := database.NewConnection(ctx, "pgx", databaseDSN)
+	db, err := database.NewConnection(ctx, "pgx", cfg.DatabaseDSN)
 	if err != nil {
 		return nil, ErrInitRepositoryFailed
 	}

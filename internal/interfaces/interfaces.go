@@ -1,8 +1,6 @@
 package interfaces
 
-import (
-	"github.com/RomanAgaltsev/urlcut/internal/model"
-)
+import "github.com/RomanAgaltsev/urlcut/internal/model"
 
 // Service интерфейс сервиса сокращения URL.
 type Service interface {
@@ -10,7 +8,6 @@ type Service interface {
 	ShortenBatch(batch []model.BatchRequest) ([]model.BatchResponse, error)
 	Expand(id string) (*model.URL, error)
 	Close() error
-	Check() error
 }
 
 // Repository интерфейс хранилища сокращенных URL.
@@ -18,5 +15,4 @@ type Repository interface {
 	Store(urls []*model.URL) (*model.URL, error)
 	Get(id string) (*model.URL, error)
 	Close() error
-	Check() error
 }

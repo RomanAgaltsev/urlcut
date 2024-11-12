@@ -68,9 +68,6 @@ func TestDBRepository(t *testing.T) {
 
 	assert.Equal(t, urlS, urlG)
 
-	err = dbRepository.Check()
-	require.NoError(t, err)
-
 	err = dbRepository.Close()
 	require.NoError(t, err)
 

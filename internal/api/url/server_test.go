@@ -3,6 +3,8 @@ package url
 import (
 	"testing"
 
+	"github.com/RomanAgaltsev/urlcut/internal/config"
+	
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -10,10 +12,12 @@ import (
 func TestServer(t *testing.T) {
 	hlp := newHelper(t)
 
-	_, err := NewServer(hlp.shortener, "")
+	cfg := &config.Config{}
+
+	_, err := NewServer(hlp.shortener, cfg)
 	assert.Equal(t, ErrInitServerFailed, err)
 
-	server, err := NewServer(hlp.shortener, hlp.serverPort)
+	server, err := NewServer(hlp.shortener, hlp.cfg)
 	require.NoError(t, err)
-	assert.Equal(t, hlp.serverPort, server.Addr)
+	assert.Equal(t, hlp.cfg.ServerPort, server.Addr)
 }

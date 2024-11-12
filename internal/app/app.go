@@ -19,7 +19,7 @@ import (
 
 // App является структурой всего приложения.
 type App struct {
-	config    *config.Config
+	cfg       *config.Config
 	server    *http.Server
 	shortener interfaces.Service
 }
@@ -61,7 +61,7 @@ func (a *App) initConfig() error {
 	if err != nil {
 		return err
 	}
-	a.config = cfg
+	a.cfg = cfg
 
 	return nil
 }
@@ -78,12 +78,12 @@ func (a *App) initLogger() error {
 
 // initShortener инициализирует сервис сокращателя ссылок, включая хранилище.
 func (a *App) initShortener() error {
-	repo, err := repository.New(a.config.DatabaseDSN, a.config.FileStoragePath)
+	repo, err := repository.New(a.cfg)
 	if err != nil {
 		return err
 	}
 
-	shortener, err := services.NewShortener(repo, a.config.BaseURL, a.config.IDlength)
+	shortener, err := services.NewShortener(repo, a.cfg)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (a *App) initShortener() error {
 
 // initHTTPServer инициализирует HTTP сервер.
 func (a *App) initHTTPServer() error {
-	server, err := url.NewServer(a.shortener, a.config.ServerPort)
+	server, err := url.NewServer(a.shortener, a.cfg)
 	if err != nil {
 		return err
 	}

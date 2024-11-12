@@ -163,8 +163,3 @@ func (r *DBRepository) Get(id string) (*model.URL, error) {
 func (r *DBRepository) Close() error {
 	return r.db.Close()
 }
-
-// Check выполняет пинг БД.
-func (r *DBRepository) Check() error {
-	return r.db.Ping()
-}

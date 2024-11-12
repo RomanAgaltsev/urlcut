@@ -37,9 +37,6 @@ func TestInMemoryRepository(t *testing.T) {
 	assert.NotNil(t, urlGet)
 	assert.Equal(t, url, urlGet)
 
-	err = inMemoryRepository.Check()
-	require.NoError(t, err)
-
 	err = inMemoryRepository.Close()
 	require.NoError(t, err)
 }

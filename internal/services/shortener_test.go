@@ -3,6 +3,7 @@ package services
 import (
 	"testing"
 
+	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/mocks"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
 
@@ -13,11 +14,21 @@ import (
 
 func TestShortener(t *testing.T) {
 	const (
-		baseURL  = "http://localhost:8080"
-		longURL  = "https://practicum.yandex.ru/"
-		urlID    = "h7Ds18sD"
-		idLength = 8
+		serverPort = "localhost:8080"
+		baseURL    = "http://localhost:8080"
+		longURL    = "https://practicum.yandex.ru/"
+		urlID      = "h7Ds18sD"
+		idLength   = 8
 	)
+
+	cfg := &config.Config{
+		ServerPort:      serverPort,
+		BaseURL:         baseURL,
+		FileStoragePath: "",
+		DatabaseDSN:     "",
+		IDlength:        idLength,
+	}
+
 	url := &model.URL{
 		Long: longURL,
 		Base: baseURL,
@@ -34,7 +45,7 @@ func TestShortener(t *testing.T) {
 		Return(nil, nil).
 		Times(1)
 
-	shortener, err := NewShortener(mockRepo, baseURL, idLength)
+	shortener, err := NewShortener(mockRepo, cfg)
 	require.NoError(t, err)
 
 	urlS, err := shortener.Shorten(longURL)
@@ -57,15 +68,6 @@ func TestShortener(t *testing.T) {
 	urlE, err := shortener.Expand(urlS.ID)
 	require.NoError(t, err)
 	assert.Equal(t, urlS, urlE)
-
-	mockRepo.
-		EXPECT().
-		Check().
-		Return(nil).
-		Times(1)
-
-	err = shortener.Check()
-	require.NoError(t, err)
 
 	mockRepo.
 		EXPECT().
