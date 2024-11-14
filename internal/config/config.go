@@ -15,6 +15,7 @@ type Config struct {
 	BaseURL         string // Базовый адрес сокращенного URL
 	FileStoragePath string // Путь к файловому хранилищу
 	DatabaseDSN     string // Строка соединения с БД
+	SecretKey       string // Секретный ключ авторизации
 	IDlength        int    // Длина идентификатора в сокращенном URL
 }
 
@@ -24,6 +25,7 @@ type configBuilder struct {
 	baseURL         string `env:"BASE_URL"`
 	fileStoragePath string `env:"FILE_STORAGE_PATH"`
 	databaseDSN     string `env:"DATABASE_DSN"`
+	secretKey       string `env:"SECRET_KEY"`
 	idLength        int
 }
 
@@ -38,6 +40,7 @@ func (cb *configBuilder) setDefaults() error {
 	cb.baseURL = "http://localhost:8080"
 	cb.fileStoragePath = "storage.json"
 	cb.databaseDSN = ""
+	cb.secretKey = ""
 	cb.idLength = 8
 
 	return nil
@@ -49,6 +52,7 @@ func (cb *configBuilder) setFlags() error {
 	flag.StringVar(&cb.baseURL, "b", cb.baseURL, "basic address of shortened URL")
 	flag.StringVar(&cb.fileStoragePath, "f", cb.fileStoragePath, "path to the storage file")
 	flag.StringVar(&cb.databaseDSN, "d", cb.databaseDSN, "database connection string")
+	flag.StringVar(&cb.secretKey, "k", cb.secretKey, "secret authorization key")
 	flag.IntVar(&cb.idLength, "l", cb.idLength, "URL ID default length")
 	flag.Parse()
 
@@ -77,6 +81,11 @@ func (cb *configBuilder) setEnvs() error {
 		cb.databaseDSN = dsn
 	}
 
+	sk := os.Getenv("SECRET_KEY")
+	if dsn != "" {
+		cb.secretKey = sk
+	}
+
 	return nil
 }
 
@@ -87,6 +96,7 @@ func (cb *configBuilder) build() *Config {
 		BaseURL:         cb.baseURL,
 		FileStoragePath: cb.fileStoragePath,
 		DatabaseDSN:     cb.databaseDSN,
+		SecretKey:       cb.secretKey,
 		IDlength:        cb.idLength,
 	}
 }
