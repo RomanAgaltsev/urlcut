@@ -2,7 +2,6 @@ package url
 
 import (
 	"fmt"
-
 	"net/http"
 
 	"github.com/RomanAgaltsev/urlcut/internal/api/middleware"
@@ -10,6 +9,7 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth/v5"
 )
 
 // ErrInitServerFailed ошибка инициализации HTTP сервера
@@ -31,15 +31,20 @@ func NewServer(shortener interfaces.Service, cfg *config.Config) (*http.Server, 
 	router.Use(middleware.WithLogging)
 	router.Use(middleware.WithGzip)
 	// Настраиваем роутинг
-	router.Route("/", func(r chi.Router) {
+	// -- авторизаци не требуется
+	router.Group(func(r chi.Router) {
 		r.Post("/", handlers.Shorten)
-		r.Route("/api", func(r chi.Router) {
-			r.Post("/shorten", handlers.ShortenAPI)
-			r.Post("/shorten/batch", handlers.ShortenAPIBatch)
-		})
+		r.Post("/api/shorten", handlers.ShortenAPI)
+		r.Post("/api/shorten/batch", handlers.ShortenAPIBatch)
 	})
-	router.Get("/{id}", handlers.Expand)
-	router.Get("/ping", handlers.Ping)
+	// -- авторизация требуется
+	tokenAuth := jwtauth.New("HS256", []byte(cfg.SecretKey), nil)
+	router.Group(func(r chi.Router) {
+		r.Use(jwtauth.Verifier(tokenAuth))
+		r.Use(middleware.WithAuth(tokenAuth))
+
+		r.Get("/api/user/urls", handlers.UserUrls)
+	})
 
 	return &http.Server{
 		Addr:    cfg.ServerPort,
