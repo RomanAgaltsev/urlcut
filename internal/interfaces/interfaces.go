@@ -8,7 +8,7 @@ import (
 
 // Service интерфейс сервиса сокращения URL.
 type Service interface {
-	Shorten(longURL string) (*model.URL, error)
+	Shorten(longURL string, uid uuid.UUID) (*model.URL, error)
 	ShortenBatch(batch []model.BatchRequest) ([]model.BatchResponse, error)
 	Expand(id string) (*model.URL, error)
 	UserURLs(uid uuid.UUID) ([]model.UserURL, error)

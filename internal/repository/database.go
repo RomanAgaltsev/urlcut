@@ -92,6 +92,7 @@ func (r *DBRepository) Store(urls []*model.URL) (*model.URL, error) {
 				LongUrl: url.Long,
 				BaseUrl: url.Base,
 				UrlID:   url.ID,
+				Uid:     url.UID,
 			})
 			// Проверяем ошибку на конфликт
 			if errors.As(errbo, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
@@ -167,7 +168,7 @@ func (r *DBRepository) GetUserURLs(uid uuid.UUID) ([]*model.URL, error) {
 
 	// Получаем из БД URL по идентификатору пользователя при помощи retry операции
 	urls, err := backoff.RetryWithData(func() ([]queries.Url, error) {
-		return r.q.GetUserURLs(ctx, uuid.NullUUID{UUID: uid, Valid: true})
+		return r.q.GetUserURLs(ctx, uid)
 	}, backoff.NewExponentialBackOff())
 	if err != nil {
 		return nil, err

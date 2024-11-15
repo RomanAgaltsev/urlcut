@@ -57,7 +57,7 @@ FROM urls
 WHERE uid = $1
 `
 
-func (q *Queries) GetUserURLs(ctx context.Context, uid uuid.NullUUID) ([]Url, error) {
+func (q *Queries) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]Url, error) {
 	rows, err := q.query(ctx, q.getUserURLsStmt, getUserURLs, uid)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ type StoreURLParams struct {
 	LongUrl string
 	BaseUrl string
 	UrlID   string
-	Uid     uuid.NullUUID
+	Uid     uuid.UUID
 }
 
 func (q *Queries) StoreURL(ctx context.Context, arg StoreURLParams) (Url, error) {

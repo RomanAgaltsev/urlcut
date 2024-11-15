@@ -38,12 +38,13 @@ func NewShortener(repository interfaces.Repository, cfg *config.Config) (*Shorte
 }
 
 // Shorten сокращает переданную ссылку.
-func (s *Shortener) Shorten(longURL string) (*model.URL, error) {
+func (s *Shortener) Shorten(longURL string, uid uuid.UUID) (*model.URL, error) {
 	// Создаем структуру URL
 	url := &model.URL{
 		Long: longURL,
 		Base: s.cfg.BaseURL,
 		ID:   random.String(s.cfg.IDlength),
+		UID:  uid,
 	}
 
 	// Сохраняем структуру URL в репозитории

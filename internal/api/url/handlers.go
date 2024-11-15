@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	uuid2 "github.com/google/uuid"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -17,12 +17,15 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 const (
 	ContentTypeJSON = "application/json"
 	ContentTypeText = "text/plain; charset=utf-8"
 )
+
+var ErrNoUserID = fmt.Errorf("no user ID provided")
 
 type Handlers struct {
 	shortener interfaces.Service
@@ -38,6 +41,14 @@ func NewHandlers(shortener interfaces.Service, cfg *config.Config) *Handlers {
 
 // Shorten выполняет обработку запроса на сокращение URL, который передается в текстовом формате.
 func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
+	// Получаем идентификатор пользователя
+	uid, err := getUserUid(r)
+	if err != nil {
+		// Что-то пошло не так - в авторизации отказываем
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
 	// Читаем оригинальный URL из тела запроса
 	longURL, _ := io.ReadAll(r.Body)
 	defer func() { _ = r.Body.Close() }()
@@ -49,7 +60,7 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Выполняем сокращение полученного оригинального URL
-	url, err := h.shortener.Shorten(string(longURL))
+	url, err := h.shortener.Shorten(string(longURL), uid)
 	if err != nil && !errors.Is(err, repository.ErrConflict) {
 		slog.Info(
 			"failed to short URL",
@@ -85,6 +96,14 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 
 // ShortenAPI выполняет обработку запроса на сокращение URL, который передается в формате JSON.
 func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
+	// Получаем идентификатор пользователя
+	uid, err := getUserUid(r)
+	if err != nil {
+		// Что-то пошло не так - в авторизации отказываем
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
 	// Читать тело запроса будем при помощи JSON декодера
 	dec := json.NewDecoder(r.Body)
 	defer func() { _ = r.Body.Close() }()
@@ -107,7 +126,7 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Выполняем сокращение URL
-	url, errShort := h.shortener.Shorten(longURL)
+	url, errShort := h.shortener.Shorten(longURL, uid)
 	if errShort != nil && !errors.Is(errShort, repository.ErrConflict) {
 		slog.Info(
 			"failed to short URL",
@@ -151,6 +170,14 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 
 // ShortenAPIBatch выполняет обработку запроса на сокращение массива URL (батча), который передается в формате JSON.
 func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
+	// Получаем идентификатор пользователя
+	_, err := getUserUid(r)
+	if err != nil {
+		// Что-то пошло не так - в авторизации отказываем
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
 	// Создаем слайс для батча
 	batch := make([]model.BatchRequest, 0)
 
@@ -159,7 +186,7 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 	defer func() { _ = r.Body.Close() }()
 
 	// Читаем открывающую скобку "["
-	_, err := dec.Token()
+	_, err = dec.Token()
 	if err != nil {
 		slog.Info(
 			"failed to decode batch",
@@ -218,6 +245,14 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 
 // Expand выполняет обработку запроса на получение оригинального URL.
 func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
+	// Получаем идентификатор пользователя
+	_, err := getUserUid(r)
+	if err != nil {
+		// Что-то пошло не так - в авторизации отказываем
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
 	// Получаем идентификатор из параметров URL
 	urlID := chi.URLParam(r, "id")
 
@@ -243,7 +278,15 @@ func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
 }
 
 // Ping выполняет обработку запроса на пинг хранилища.
-func (h *Handlers) Ping(w http.ResponseWriter, _ *http.Request) {
+func (h *Handlers) Ping(w http.ResponseWriter, r *http.Request) {
+	// Получаем идентификатор пользователя
+	_, err := getUserUid(r)
+	if err != nil {
+		// Что-то пошло не так - в авторизации отказываем
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
 	db, err := database.NewConnection(context.Background(), "pgx", h.cfg.DatabaseDSN)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -255,19 +298,15 @@ func (h *Handlers) Ping(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
-	if r.Context().Value("uid") == nil {
+	// Получаем идентификатор пользователя
+	uid, err := getUserUid(r)
+	if err != nil {
+		// Что-то пошло не так - в авторизации отказываем
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-
-	uid := r.Context().Value("uid").(string)
-	w.Write([]byte(uid))
-
-	UserID := uuid2.MustParse(uid)
-
-	_, err := h.shortener.UserURLs(UserID)
+	_, err = h.shortener.UserURLs(uid)
 	if err != nil {
 		slog.Info(
 			"failed to fetch user URLs",
@@ -276,4 +315,30 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+}
+
+// getUserUid получает идентификатор пользователя из контекста запроса.
+func getUserUid(r *http.Request) (uuid.UUID, error) {
+	// Получаем идентификатор-интерфейс пользователя из контекста
+	uidInterface := r.Context().Value("uid")
+	if uidInterface == nil {
+		// Идентификатора нет
+		return uuid.Nil, ErrNoUserID
+	}
+
+	// Идентификатор-интерфейс есть, пробуем привести к строке
+	uidString, ok := uidInterface.(string)
+	if !ok {
+		// Привести к строке не получилось
+		return uuid.Nil, ErrNoUserID
+	}
+
+	// Пробуем парсить строку в uuid
+	uid, err := uuid.Parse(uidString)
+	if err != nil {
+		// Привести к строке не получилось
+		return uuid.Nil, ErrNoUserID
+	}
+
+	return uid, nil
 }

@@ -16,5 +16,5 @@ type Url struct {
 	BaseUrl   string
 	UrlID     string
 	CreatedAt time.Time
-	Uid       uuid.NullUUID
+	Uid       uuid.UUID
 }
