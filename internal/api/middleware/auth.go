@@ -49,9 +49,8 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 			claims := token.PrivateClaims()
 
 			// uid пользователя передаем дальше через контекст
-			r = r.WithContext(context.WithValue(r.Context(), "uid", claims["uid"]))
-
-			next.ServeHTTP(w, r)
+			ctx := context.WithValue(r.Context(), "uid", claims["uid"])
+			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 		return http.HandlerFunc(fn)
 	}
