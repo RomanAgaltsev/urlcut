@@ -306,7 +306,7 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.shortener.UserURLs(uid)
+	urls, err := h.shortener.UserURLs(uid)
 	if err != nil {
 		slog.Info(
 			"failed to fetch user URLs",
@@ -315,6 +315,10 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(urls) == 0 {
+		http.Error(w, http.StatusText(http.StatusNoContent), http.StatusNoContent)
+		return
+	}
 }
 
 // getUserUid получает идентификатор пользователя из контекста запроса.
