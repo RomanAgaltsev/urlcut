@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"net/http"
 
 	"github.com/go-chi/jwtauth/v5"
@@ -15,11 +16,13 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 			tokenString := jwtauth.TokenFromCookie(r)
 			if tokenString == "" {
 				// Выдаем куку
-				_, tokenString, _ = ja.Encode(map[string]interface{}{"uid": 1})
+				_, tokenString, _ = ja.Encode(map[string]interface{}{"uid": uuid.New().String()})
 				http.SetCookie(w, &http.Cookie{
 					Name:   "jwt",
 					Value:  tokenString,
+					Path:   "/api/user/urls",
 					MaxAge: 300,
+					Secure: true,
 				})
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
@@ -35,11 +38,13 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 			// Валидируем
 			if err := jwt.Validate(token, ja.ValidateOptions()...); err != nil {
 				// Выдаем куку
-				_, tokenString, _ = ja.Encode(map[string]interface{}{"uid": 1})
+				_, tokenString, _ = ja.Encode(map[string]interface{}{"uid": uuid.New().String()})
 				http.SetCookie(w, &http.Cookie{
 					Name:   "jwt",
 					Value:  tokenString,
+					Path:   "/api/user/urls",
 					MaxAge: 300,
+					Secure: true,
 				})
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return

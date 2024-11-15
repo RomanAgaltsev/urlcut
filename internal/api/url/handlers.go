@@ -261,7 +261,6 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	uid := r.Context().Value("uid").(float64)
-	uidString := strconv.FormatFloat(uid, 'f', 0, 64)
-	w.Write([]byte(uidString))
+	uid := r.Context().Value("uid").(string)
+	w.Write([]byte(uid))
 }
