@@ -131,7 +131,8 @@ func (r *DBRepository) Store(urls []*model.URL) (*model.URL, error) {
 			return &model.URL{
 				Long: conflError.url.LongUrl,
 				Base: conflError.url.BaseUrl,
-				ID:   conflError.url.UrlID}, conflError.err
+				ID:   conflError.url.UrlID,
+				UID:  conflError.url.Uid}, conflError.err
 		}
 	}
 
