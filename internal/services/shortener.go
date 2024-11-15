@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 
 	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
@@ -100,6 +101,10 @@ func (s *Shortener) Expand(id string) (*model.URL, error) {
 	}
 
 	return url, nil
+}
+
+func (s *Shortener) UserURLs(uid uuid.UUID) ([]model.UserURL, error) {
+	return nil, nil
 }
 
 // Close закрывает репозиторий ссылок сокращателя.

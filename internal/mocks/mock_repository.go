@@ -13,6 +13,7 @@ import (
 	reflect "reflect"
 
 	model "github.com/RomanAgaltsev/urlcut/internal/model"
+	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -67,6 +68,21 @@ func (m *MockRepository) Get(id string) (*model.URL, error) {
 func (mr *MockRepositoryMockRecorder) Get(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepository)(nil).Get), id)
+}
+
+// GetUserURLs mocks base method.
+func (m *MockRepository) GetUserURLs(uid uuid.UUID) ([]*model.URL, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserURLs", uid)
+	ret0, _ := ret[0].([]*model.URL)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserURLs indicates an expected call of GetUserURLs.
+func (mr *MockRepositoryMockRecorder) GetUserURLs(uid any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserURLs", reflect.TypeOf((*MockRepository)(nil).GetUserURLs), uid)
 }
 
 // Store mocks base method.

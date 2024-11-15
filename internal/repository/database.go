@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/google/uuid"
 	"time"
 
 	"github.com/RomanAgaltsev/urlcut/internal/database/queries"
@@ -157,6 +158,10 @@ func (r *DBRepository) Get(id string) (*model.URL, error) {
 		Base: url.BaseUrl,
 		ID:   url.UrlID,
 	}, nil
+}
+
+func (r *DBRepository) GetUserURLs(uid uuid.UUID) ([]*model.URL, error) {
+	return nil, nil
 }
 
 // Close закрывает соединение с БД.

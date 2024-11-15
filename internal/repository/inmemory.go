@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"sync"
 
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
@@ -57,6 +58,10 @@ func (r *InMemoryRepository) Get(id string) (*model.URL, error) {
 	} else {
 		return url, ErrIDNotFound
 	}
+}
+
+func (r *InMemoryRepository) GetUserURLs(uid uuid.UUID) ([]*model.URL, error) {
+	return nil, nil
 }
 
 // Close сохраняет данные из in memory репозитория в файловое хранилище.
