@@ -161,6 +161,22 @@ func (r *DBRepository) Get(id string) (*model.URL, error) {
 }
 
 func (r *DBRepository) GetUserURLs(uid uuid.UUID) ([]*model.URL, error) {
+	// Создаем контекст
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Получаем из БД URL по идентификатору пользователя при помощи retry операции
+	urls, err := backoff.RetryWithData(func() ([]queries.Url, error) {
+		return r.q.GetUserURLs(ctx, uuid.NullUUID{UUID: uid, Valid: true})
+	}, backoff.NewExponentialBackOff())
+	if err != nil {
+		return nil, err
+	}
+
+	for _, _ = range urls {
+
+	}
+
 	return nil, nil
 }
 

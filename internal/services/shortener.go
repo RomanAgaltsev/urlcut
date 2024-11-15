@@ -104,6 +104,11 @@ func (s *Shortener) Expand(id string) (*model.URL, error) {
 }
 
 func (s *Shortener) UserURLs(uid uuid.UUID) ([]model.UserURL, error) {
+	_, err := s.repository.GetUserURLs(uid)
+	if err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }
 

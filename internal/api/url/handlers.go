@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	uuid2 "github.com/google/uuid"
 	"io"
 	"log/slog"
 	"net/http"
@@ -263,4 +264,16 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 
 	uid := r.Context().Value("uid").(string)
 	w.Write([]byte(uid))
+
+	UserID := uuid2.MustParse(uid)
+
+	_, err := h.shortener.UserURLs(UserID)
+	if err != nil {
+		slog.Info(
+			"failed to fetch user URLs",
+			"error", err.Error())
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
+		return
+	}
+
 }
