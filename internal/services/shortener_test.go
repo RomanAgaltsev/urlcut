@@ -7,6 +7,7 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/mocks"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -21,6 +22,8 @@ func TestShortener(t *testing.T) {
 		idLength   = 8
 	)
 
+	uid := uuid.New()
+
 	cfg := &config.Config{
 		ServerPort:      serverPort,
 		BaseURL:         baseURL,
@@ -33,6 +36,7 @@ func TestShortener(t *testing.T) {
 		Long: longURL,
 		Base: baseURL,
 		ID:   urlID,
+		UID:  uid,
 	}
 
 	ctrl := gomock.NewController(t)
@@ -48,7 +52,7 @@ func TestShortener(t *testing.T) {
 	shortener, err := NewShortener(mockRepo, cfg)
 	require.NoError(t, err)
 
-	urlS, err := shortener.Shorten(longURL)
+	urlS, err := shortener.Shorten(longURL, uid)
 	require.NoError(t, err)
 	assert.Equal(t, url.Long, urlS.Long)
 	assert.Equal(t, url.Base, urlS.Base)
@@ -62,6 +66,7 @@ func TestShortener(t *testing.T) {
 			Long: urlS.Long,
 			Base: urlS.Base,
 			ID:   urlS.ID,
+			UID:  uid,
 		}, nil).
 		Times(1)
 

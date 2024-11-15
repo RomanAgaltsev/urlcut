@@ -6,7 +6,7 @@ EXTENSION IF NOT EXISTS "uuid-ossp";
 ALTER TABLE urls
     ADD COLUMN uid UUID NOT NULL DEFAULT uuid_generate_v4();
 
-CREATE UNIQUE INDEX uid_idx ON urls (uid);
+CREATE INDEX uid_idx ON urls (uid);
 -- +goose StatementEnd
 
 -- +goose Down

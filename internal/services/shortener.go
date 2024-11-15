@@ -61,7 +61,7 @@ func (s *Shortener) Shorten(longURL string, uid uuid.UUID) (*model.URL, error) {
 }
 
 // ShortenBatch сокращает переданный батч ссылок.
-func (s *Shortener) ShortenBatch(batch []model.BatchRequest) ([]model.BatchResponse, error) {
+func (s *Shortener) ShortenBatch(batch []model.BatchRequest, uid uuid.UUID) ([]model.BatchResponse, error) {
 	// Создаем слайс для хранения сокращенных ссылок батча
 	batchShortened := make([]model.BatchResponse, 0, len(batch))
 	// Создаем слайс URL
@@ -74,13 +74,25 @@ func (s *Shortener) ShortenBatch(batch []model.BatchRequest) ([]model.BatchRespo
 			Base:   s.cfg.BaseURL,
 			ID:     random.String(s.cfg.IDlength),
 			CorrID: batchReq.CorrelationID,
+			UID:    uid,
 		})
 	}
 
 	// Сохраняем слайс URL в БД
-	_, err := s.repository.Store(urls)
-	if err != nil {
+	duplicatedURL, err := s.repository.Store(urls)
+	if err != nil && !errors.Is(err, repository.ErrConflict) {
 		return batchShortened, err
+	}
+
+	// Если был конфликт, вернем дубль
+	if errors.Is(err, repository.ErrConflict) {
+		// При наличии конфликта должна вернуться ранее сохраненная сокращенная ссылка
+		batchShortened = append(batchShortened, model.BatchResponse{
+			CorrelationID: duplicatedURL.CorrID,
+			ShortURL:      duplicatedURL.Short(),
+		})
+
+		return batchShortened, nil
 	}
 
 	// Перекладываем сокращенные ссылки в слайс батча для возврата

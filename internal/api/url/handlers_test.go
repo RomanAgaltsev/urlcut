@@ -3,6 +3,7 @@ package url
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -54,7 +55,7 @@ func newHelper(t *testing.T) *helper {
 	handlers := NewHandlers(service, cfg)
 
 	return &helper{
-		cfg: cfg,
+		cfg:        cfg,
 		repository: repo,
 		shortener:  service,
 		router:     router,
@@ -85,6 +86,15 @@ func TestShortenHandler(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			req := resty.New().R()
+			//			req.SetCookie(&http.Cookie{
+			//					Name:   "jwt",
+			//					Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJiN2FlNTAyYS1kNDEyLTRjODQtOTE0MS05Y2M0YjEwMjU3MjgifQ.a2WtJfOI25Qizm0pD_YcmlKL7Lwr3O2BJc4XXzfNyHA",
+			//					Path:   "/",
+			//					//MaxAge: 300,
+			//					Secure: true,
+			//			})
+			req.SetContext(context.WithValue(context.Background(), "uid", map[string]interface{}{"uid": "b7ae502a-d412-4c84-9141-9cc4b1025728"}))
+
 			req.Method = test.reqMethod
 			req.URL = httpSrv.URL
 

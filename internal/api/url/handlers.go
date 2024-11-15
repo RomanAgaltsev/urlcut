@@ -171,7 +171,8 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 // ShortenAPIBatch выполняет обработку запроса на сокращение массива URL (батча), который передается в формате JSON.
 func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 	// Получаем идентификатор пользователя
-	_, err := getUserUid(r)
+	uid, err := getUserUid(r)
+
 	if err != nil {
 		// Что-то пошло не так - в авторизации отказываем
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
@@ -217,8 +218,8 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Сокращаем все URL батча, которые были прочитаны
-	batchShortened, err := h.shortener.ShortenBatch(batch)
-	if err != nil {
+	batchShortened, err := h.shortener.ShortenBatch(batch, uid)
+	if err != nil && !errors.Is(err, repository.ErrConflict) {
 		slog.Info(
 			"failed to short URL",
 			"error", err.Error())
@@ -226,9 +227,17 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяем на наличие конфликта данных - повторная отправка оригинального URL
+	// Если конфликт есть, то все равно возвращаем сокращенный URL - возвращается уже имеющийся в БД
+	// разница только в статусе ответа
+	if errors.Is(err, repository.ErrConflict) {
+		w.WriteHeader(http.StatusConflict)
+	} else {
+		w.WriteHeader(http.StatusCreated)
+	}
+
 	// Пишем заголовки
 	w.Header().Set("Content-Type", ContentTypeJSON)
-	w.WriteHeader(http.StatusCreated)
 
 	// Данные в тело ответа будем записывать при помощи JSON енкодера
 	enc := json.NewEncoder(w)
