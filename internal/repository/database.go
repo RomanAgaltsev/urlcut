@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/google/uuid"
 	"time"
 
 	"github.com/RomanAgaltsev/urlcut/internal/database/queries"
@@ -12,6 +11,7 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/model"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/google/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"

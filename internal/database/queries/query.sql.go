@@ -7,10 +7,12 @@ package queries
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 const getURL = `-- name: GetURL :one
-SELECT id, long_url, base_url, url_id, created_at
+SELECT id, long_url, base_url, url_id, created_at, uid
 FROM urls
 WHERE url_id = $1 LIMIT 1
 `
@@ -24,12 +26,13 @@ func (q *Queries) GetURL(ctx context.Context, urlID string) (Url, error) {
 		&i.BaseUrl,
 		&i.UrlID,
 		&i.CreatedAt,
+		&i.Uid,
 	)
 	return i, err
 }
 
 const getURLByLong = `-- name: GetURLByLong :one
-SELECT id, long_url, base_url, url_id, created_at
+SELECT id, long_url, base_url, url_id, created_at, uid
 FROM urls
 WHERE long_url = $1 LIMIT 1
 `
@@ -43,23 +46,66 @@ func (q *Queries) GetURLByLong(ctx context.Context, longUrl string) (Url, error)
 		&i.BaseUrl,
 		&i.UrlID,
 		&i.CreatedAt,
+		&i.Uid,
 	)
 	return i, err
 }
 
+const getUserURLs = `-- name: GetUserURLs :many
+SELECT id, long_url, base_url, url_id, created_at, uid
+FROM urls
+WHERE uid = $1
+`
+
+func (q *Queries) GetUserURLs(ctx context.Context, uid uuid.NullUUID) ([]Url, error) {
+	rows, err := q.query(ctx, q.getUserURLsStmt, getUserURLs, uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Url
+	for rows.Next() {
+		var i Url
+		if err := rows.Scan(
+			&i.ID,
+			&i.LongUrl,
+			&i.BaseUrl,
+			&i.UrlID,
+			&i.CreatedAt,
+			&i.Uid,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const storeURL = `-- name: StoreURL :one
-INSERT INTO urls (long_url, base_url, url_id)
-VALUES ($1, $2, $3) RETURNING id, long_url, base_url, url_id, created_at
+INSERT INTO urls (long_url, base_url, url_id, uid)
+VALUES ($1, $2, $3, $4) RETURNING id, long_url, base_url, url_id, created_at, uid
 `
 
 type StoreURLParams struct {
 	LongUrl string
 	BaseUrl string
 	UrlID   string
+	Uid     uuid.NullUUID
 }
 
 func (q *Queries) StoreURL(ctx context.Context, arg StoreURLParams) (Url, error) {
-	row := q.queryRow(ctx, q.storeURLStmt, storeURL, arg.LongUrl, arg.BaseUrl, arg.UrlID)
+	row := q.queryRow(ctx, q.storeURLStmt, storeURL,
+		arg.LongUrl,
+		arg.BaseUrl,
+		arg.UrlID,
+		arg.Uid,
+	)
 	var i Url
 	err := row.Scan(
 		&i.ID,
@@ -67,6 +113,7 @@ func (q *Queries) StoreURL(ctx context.Context, arg StoreURLParams) (Url, error)
 		&i.BaseUrl,
 		&i.UrlID,
 		&i.CreatedAt,
+		&i.Uid,
 	)
 	return i, err
 }
