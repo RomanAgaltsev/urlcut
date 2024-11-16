@@ -1,7 +1,6 @@
 package url
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -41,6 +40,8 @@ func NewHandlers(shortener interfaces.Service, cfg *config.Config) *Handlers {
 
 // Shorten выполняет обработку запроса на сокращение URL, который передается в текстовом формате.
 func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	// Получаем идентификатор пользователя
 	uid, err := getUserUid(r)
 	if err != nil {
@@ -60,7 +61,7 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Выполняем сокращение полученного оригинального URL
-	url, err := h.shortener.Shorten(string(longURL), uid)
+	url, err := h.shortener.Shorten(ctx, string(longURL), uid)
 	if err != nil && !errors.Is(err, repository.ErrConflict) {
 		slog.Info(
 			"failed to short URL",
@@ -96,6 +97,8 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 
 // ShortenAPI выполняет обработку запроса на сокращение URL, который передается в формате JSON.
 func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	// Получаем идентификатор пользователя
 	uid, err := getUserUid(r)
 	if err != nil {
@@ -126,7 +129,7 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Выполняем сокращение URL
-	url, errShort := h.shortener.Shorten(longURL, uid)
+	url, errShort := h.shortener.Shorten(ctx, longURL, uid)
 	if errShort != nil && !errors.Is(errShort, repository.ErrConflict) {
 		slog.Info(
 			"failed to short URL",
@@ -170,9 +173,10 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 
 // ShortenAPIBatch выполняет обработку запроса на сокращение массива URL (батча), который передается в формате JSON.
 func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	// Получаем идентификатор пользователя
 	uid, err := getUserUid(r)
-
 	if err != nil {
 		// Что-то пошло не так - в авторизации отказываем
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
@@ -218,7 +222,7 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Сокращаем все URL батча, которые были прочитаны
-	batchShortened, err := h.shortener.ShortenBatch(batch, uid)
+	batchShortened, err := h.shortener.ShortenBatch(ctx, batch, uid)
 	if err != nil && !errors.Is(err, repository.ErrConflict) {
 		slog.Info(
 			"failed to short URL",
@@ -254,6 +258,8 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 
 // Expand выполняет обработку запроса на получение оригинального URL.
 func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	// Получаем идентификатор пользователя
 	_, err := getUserUid(r)
 	if err != nil {
@@ -266,7 +272,7 @@ func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
 	urlID := chi.URLParam(r, "id")
 
 	// Получаем URL по идентификатору
-	url, err := h.shortener.Expand(urlID)
+	url, err := h.shortener.Expand(ctx, urlID)
 	if err != nil {
 		slog.Info(
 			"failed to expand URL",
@@ -288,6 +294,8 @@ func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
 
 // Ping выполняет обработку запроса на пинг хранилища.
 func (h *Handlers) Ping(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	// Получаем идентификатор пользователя
 	_, err := getUserUid(r)
 	if err != nil {
@@ -296,7 +304,7 @@ func (h *Handlers) Ping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.NewConnection(context.Background(), "pgx", h.cfg.DatabaseDSN)
+	db, err := database.NewConnection(ctx, "pgx", h.cfg.DatabaseDSN)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -307,6 +315,8 @@ func (h *Handlers) Ping(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	// Получаем идентификатор пользователя
 	uid, err := getUserUid(r)
 	if err != nil {
@@ -316,7 +326,7 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получаем URL-ы пользователя
-	urls, err := h.shortener.UserURLs(uid)
+	urls, err := h.shortener.UserURLs(ctx, uid)
 	if err != nil {
 		slog.Info(
 			"failed to fetch user URLs",

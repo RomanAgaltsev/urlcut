@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"time"
 
 	"github.com/RomanAgaltsev/urlcut/internal/database/queries"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
@@ -54,11 +53,7 @@ func NewDBRepository(db *sql.DB) (*DBRepository, error) {
 }
 
 // Store сохраняет слайс переданных URL в БД хранилище.
-func (r *DBRepository) Store(urls []*model.URL) (*model.URL, error) {
-	// Создаем контекст
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
+func (r *DBRepository) Store(ctx context.Context, urls []*model.URL) (*model.URL, error) {
 	// Начинаем транзакцию
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -141,11 +136,7 @@ func (r *DBRepository) Store(urls []*model.URL) (*model.URL, error) {
 }
 
 // Get возвращает из БД хранилища данные URL по переданному идентификатору.
-func (r *DBRepository) Get(id string) (*model.URL, error) {
-	// Создаем контекст
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
+func (r *DBRepository) Get(ctx context.Context, id string) (*model.URL, error) {
 	// Получаем из БД данные URL при помощи retry операции
 	url, err := backoff.RetryWithData(func() (queries.Url, error) {
 		return r.q.GetURL(ctx, id)
@@ -162,11 +153,7 @@ func (r *DBRepository) Get(id string) (*model.URL, error) {
 	}, nil
 }
 
-func (r *DBRepository) GetUserURLs(uid uuid.UUID) ([]*model.URL, error) {
-	// Создаем контекст
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
+func (r *DBRepository) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]*model.URL, error) {
 	// Получаем из БД URL по идентификатору пользователя при помощи retry операции
 	urlsQuery, err := backoff.RetryWithData(func() ([]queries.Url, error) {
 		return r.q.GetUserURLs(ctx, uid)
@@ -180,12 +167,20 @@ func (r *DBRepository) GetUserURLs(uid uuid.UUID) ([]*model.URL, error) {
 
 	// Перекладываем URL из результата запроса в слайс
 	for _, url := range urlsQuery {
-		urls = append(urls, &model.URL{
-			Long: url.LongUrl,
-			Base: url.BaseUrl,
-			ID:   url.UrlID,
-			UID:  url.Uid,
-		})
+		// Проверяем, не отменили ли контекст
+		select {
+		case <-ctx.Done():
+			// Контекст отменили - возвращаем ничего и ошибку контекста
+			return nil, ctx.Err()
+		default:
+			// Контекст не отменили - продолжаем перекладывать
+			urls = append(urls, &model.URL{
+				Long: url.LongUrl,
+				Base: url.BaseUrl,
+				ID:   url.UrlID,
+				UID:  url.Uid,
+			})
+		}
 	}
 
 	return urls, nil

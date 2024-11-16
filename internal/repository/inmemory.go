@@ -1,12 +1,14 @@
 package repository
 
 import (
+	"context"
 	"fmt"
-	"github.com/google/uuid"
 	"sync"
 
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
+
+	"github.com/google/uuid"
 )
 
 // Неиспользуемая переменная для проверки реализации интерфейса хранилища in memory репозиторием
@@ -37,7 +39,7 @@ func NewInMemoryRepository(fileStoragePath string) *InMemoryRepository {
 }
 
 // Store сохраняет данные URL в in memory репозитории.
-func (r *InMemoryRepository) Store(urls []*model.URL) (*model.URL, error) {
+func (r *InMemoryRepository) Store(_ context.Context, urls []*model.URL) (*model.URL, error) {
 	r.Lock()
 	defer r.Unlock()
 
@@ -49,7 +51,7 @@ func (r *InMemoryRepository) Store(urls []*model.URL) (*model.URL, error) {
 }
 
 // Get возвращает данные URL из in memory репозитория.
-func (r *InMemoryRepository) Get(id string) (*model.URL, error) {
+func (r *InMemoryRepository) Get(_ context.Context, id string) (*model.URL, error) {
 	r.Lock()
 	defer r.Unlock()
 
@@ -60,7 +62,7 @@ func (r *InMemoryRepository) Get(id string) (*model.URL, error) {
 	}
 }
 
-func (r *InMemoryRepository) GetUserURLs(uid uuid.UUID) ([]*model.URL, error) {
+func (r *InMemoryRepository) GetUserURLs(_ context.Context, uid uuid.UUID) ([]*model.URL, error) {
 	// Создаем слайс для возврата ссылок пользователя
 	urls := make([]*model.URL, 0)
 

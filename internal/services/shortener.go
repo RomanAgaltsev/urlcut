@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -38,7 +39,7 @@ func NewShortener(repository interfaces.Repository, cfg *config.Config) (*Shorte
 }
 
 // Shorten сокращает переданную ссылку.
-func (s *Shortener) Shorten(longURL string, uid uuid.UUID) (*model.URL, error) {
+func (s *Shortener) Shorten(ctx context.Context, longURL string, uid uuid.UUID) (*model.URL, error) {
 	// Создаем структуру URL
 	url := &model.URL{
 		Long: longURL,
@@ -48,7 +49,7 @@ func (s *Shortener) Shorten(longURL string, uid uuid.UUID) (*model.URL, error) {
 	}
 
 	// Сохраняем структуру URL в репозитории
-	duplicatedURL, err := s.repository.Store([]*model.URL{url})
+	duplicatedURL, err := s.repository.Store(ctx, []*model.URL{url})
 	if errors.Is(err, repository.ErrConflict) {
 		// При наличии конфликта должна вернуться ранее сохраненная сокращенная ссылка
 		return duplicatedURL, err
@@ -61,7 +62,7 @@ func (s *Shortener) Shorten(longURL string, uid uuid.UUID) (*model.URL, error) {
 }
 
 // ShortenBatch сокращает переданный батч ссылок.
-func (s *Shortener) ShortenBatch(batch []model.IncomingBatchDTO, uid uuid.UUID) ([]model.OutgoingBatchDTO, error) {
+func (s *Shortener) ShortenBatch(ctx context.Context, batch []model.IncomingBatchDTO, uid uuid.UUID) ([]model.OutgoingBatchDTO, error) {
 	// Создаем слайс для хранения сокращенных ссылок батча
 	batchShortened := make([]model.OutgoingBatchDTO, 0, len(batch))
 	// Создаем слайс URL
@@ -79,7 +80,7 @@ func (s *Shortener) ShortenBatch(batch []model.IncomingBatchDTO, uid uuid.UUID) 
 	}
 
 	// Сохраняем слайс URL в БД
-	duplicatedURL, err := s.repository.Store(urls)
+	duplicatedURL, err := s.repository.Store(ctx, urls)
 	if err != nil && !errors.Is(err, repository.ErrConflict) {
 		return batchShortened, err
 	}
@@ -107,8 +108,8 @@ func (s *Shortener) ShortenBatch(batch []model.IncomingBatchDTO, uid uuid.UUID) 
 }
 
 // Expand возвращает оригинальную ссылку по переданному идентификатору.
-func (s *Shortener) Expand(id string) (*model.URL, error) {
-	url, err := s.repository.Get(id)
+func (s *Shortener) Expand(ctx context.Context, id string) (*model.URL, error) {
+	url, err := s.repository.Get(ctx, id)
 	if err != nil {
 		return &model.URL{}, fmt.Errorf("expanding URL failed: %w", err)
 	}
@@ -116,8 +117,8 @@ func (s *Shortener) Expand(id string) (*model.URL, error) {
 	return url, nil
 }
 
-func (s *Shortener) UserURLs(uid uuid.UUID) ([]model.UserURLDTO, error) {
-	urls, err := s.repository.GetUserURLs(uid)
+func (s *Shortener) UserURLs(ctx context.Context, uid uuid.UUID) ([]model.UserURLDTO, error) {
+	urls, err := s.repository.GetUserURLs(ctx, uid)
 	if err != nil {
 		return nil, err
 	}
