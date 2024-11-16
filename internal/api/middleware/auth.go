@@ -2,12 +2,14 @@ package middleware
 
 import (
 	"context"
+	"github.com/RomanAgaltsev/urlcut/internal/pkg/auth"
 	"net/http"
 
 	"github.com/go-chi/jwtauth/v5"
-	"github.com/google/uuid"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
+
+const userIDClaimName = "uid"
 
 func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -17,42 +19,30 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 			token, err := ja.Decode(tokenString)
 			if err != nil || token == nil {
 				// Получить токен не удалось, выдаем куку
-				token, tokenString, err = ja.Encode(map[string]interface{}{"uid": uuid.New().String()})
+				token, tokenString, err = auth.NewJWTToken(ja)
 				if err != nil {
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
-				http.SetCookie(w, &http.Cookie{
-					Name:   "jwt",
-					Value:  tokenString,
-					Path:   "/",
-					MaxAge: 300,
-					Secure: true,
-				})
+				http.SetCookie(w, auth.NewCookieWithDefaults(tokenString))
 			}
 
 			// Пробуем валидировать токен
 			if err = jwt.Validate(token, ja.ValidateOptions()...); err != nil {
 				// Валидировать токен не удалось, выдаем куку
-				token, tokenString, err = ja.Encode(map[string]interface{}{"uid": uuid.New().String()})
+				token, tokenString, err = auth.NewJWTToken(ja)
 				if err != nil {
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
-				http.SetCookie(w, &http.Cookie{
-					Name:   "jwt",
-					Value:  tokenString,
-					Path:   "/",
-					MaxAge: 300,
-					Secure: true,
-				})
+				http.SetCookie(w, auth.NewCookieWithDefaults(tokenString))
 			}
 
 			// Валидацию прошли, получим утверждения
 			claims := token.PrivateClaims()
 
 			// uid пользователя передаем дальше через контекст
-			ctx := context.WithValue(r.Context(), "uid", claims["uid"])
+			ctx := context.WithValue(r.Context(), userIDClaimName, claims[userIDClaimName])
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 		return http.HandlerFunc(fn)

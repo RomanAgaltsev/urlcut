@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 
 	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
-	"github.com/RomanAgaltsev/urlcut/internal/lib/random"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
+	"github.com/RomanAgaltsev/urlcut/internal/pkg/random"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
+
+	"github.com/google/uuid"
 )
 
 // Неиспользуемая переменная для проверки соответствия сокращателя интерфейсу сервиса
