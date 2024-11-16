@@ -61,9 +61,9 @@ func (s *Shortener) Shorten(longURL string, uid uuid.UUID) (*model.URL, error) {
 }
 
 // ShortenBatch сокращает переданный батч ссылок.
-func (s *Shortener) ShortenBatch(batch []model.BatchRequest, uid uuid.UUID) ([]model.BatchResponse, error) {
+func (s *Shortener) ShortenBatch(batch []model.IncomingBatchDTO, uid uuid.UUID) ([]model.OutgoingBatchDTO, error) {
 	// Создаем слайс для хранения сокращенных ссылок батча
-	batchShortened := make([]model.BatchResponse, 0, len(batch))
+	batchShortened := make([]model.OutgoingBatchDTO, 0, len(batch))
 	// Создаем слайс URL
 	urls := make([]*model.URL, 0, len(batch))
 
@@ -87,7 +87,7 @@ func (s *Shortener) ShortenBatch(batch []model.BatchRequest, uid uuid.UUID) ([]m
 	// Если был конфликт, вернем дубль
 	if errors.Is(err, repository.ErrConflict) {
 		// При наличии конфликта должна вернуться ранее сохраненная сокращенная ссылка
-		batchShortened = append(batchShortened, model.BatchResponse{
+		batchShortened = append(batchShortened, model.OutgoingBatchDTO{
 			CorrelationID: duplicatedURL.CorrID,
 			ShortURL:      duplicatedURL.Short(),
 		})
@@ -97,7 +97,7 @@ func (s *Shortener) ShortenBatch(batch []model.BatchRequest, uid uuid.UUID) ([]m
 
 	// Перекладываем сокращенные ссылки в слайс батча для возврата
 	for _, url := range urls {
-		batchShortened = append(batchShortened, model.BatchResponse{
+		batchShortened = append(batchShortened, model.OutgoingBatchDTO{
 			CorrelationID: url.CorrID,
 			ShortURL:      url.Short(),
 		})
@@ -116,7 +116,7 @@ func (s *Shortener) Expand(id string) (*model.URL, error) {
 	return url, nil
 }
 
-func (s *Shortener) UserURLs(uid uuid.UUID) ([]model.UserURL, error) {
+func (s *Shortener) UserURLs(uid uuid.UUID) ([]model.UserURLDTO, error) {
 	_, err := s.repository.GetUserURLs(uid)
 	if err != nil {
 		return nil, err

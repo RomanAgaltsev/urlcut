@@ -143,7 +143,7 @@ func TestShortenAPIHandler(t *testing.T) {
 			req.Method = test.reqMethod
 			req.URL = httpSrv.URL + "/api/shorten"
 
-			request := model.Request{
+			request := model.URLDTO{
 				URL: test.reqURL,
 			}
 			reqBytes, _ := json.Marshal(request)
@@ -161,7 +161,7 @@ func TestShortenAPIHandler(t *testing.T) {
 			assert.Equal(t, ContentTypeJSON, res.Header().Get("Content-Type"))
 
 			dec := json.NewDecoder(bytes.NewReader(res.Body()))
-			var response model.Response
+			var response model.ResultDTO
 			err = dec.Decode(&response)
 			require.NoError(t, err)
 

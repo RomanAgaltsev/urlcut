@@ -109,7 +109,7 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 	defer func() { _ = r.Body.Close() }()
 
 	// Читаем тело запроса
-	var req model.Request
+	var req model.URLDTO
 	if err := dec.Decode(&req); err != nil {
 		slog.Info(
 			"failed to unmarshal long URL",
@@ -136,7 +136,7 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Сокращенный URL преобразуем в JSON
-	res, err := json.Marshal(model.Response{Result: url.Short()})
+	res, err := json.Marshal(model.ResultDTO{Result: url.Short()})
 	if err != nil {
 		slog.Info(
 			"failed to marshal shorten URL",
@@ -180,7 +180,7 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Создаем слайс для батча
-	batch := make([]model.BatchRequest, 0)
+	batch := make([]model.IncomingBatchDTO, 0)
 
 	// Читать тело запроса будем при помощи JSON декодера
 	dec := json.NewDecoder(r.Body)
@@ -198,7 +198,7 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 
 	// Читаем данные батча
 	for dec.More() {
-		var batchReq model.BatchRequest
+		var batchReq model.IncomingBatchDTO
 		if err := dec.Decode(&batchReq); err != nil {
 			slog.Info(
 				"failed to decode batch element",
