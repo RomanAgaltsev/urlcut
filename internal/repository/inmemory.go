@@ -61,7 +61,17 @@ func (r *InMemoryRepository) Get(id string) (*model.URL, error) {
 }
 
 func (r *InMemoryRepository) GetUserURLs(uid uuid.UUID) ([]*model.URL, error) {
-	return nil, nil
+	// Создаем слайс для возврата ссылок пользователя
+	urls := make([]*model.URL, 0)
+
+	// Отбираем URL пользователя простым перебором
+	for _, url := range r.m {
+		if url.UID == uid {
+			urls = append(urls, url)
+		}
+	}
+
+	return urls, nil
 }
 
 // Close сохраняет данные из in memory репозитория в файловое хранилище.

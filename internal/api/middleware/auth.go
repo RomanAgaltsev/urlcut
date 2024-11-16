@@ -34,7 +34,11 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 			// Пробуем валидировать токен
 			if err = jwt.Validate(token, ja.ValidateOptions()...); err != nil {
 				// Валидировать токен не удалось, выдаем куку
-				token, tokenString, _ = ja.Encode(map[string]interface{}{"uid": uuid.New().String()})
+				token, tokenString, err = ja.Encode(map[string]interface{}{"uid": uuid.New().String()})
+				if err != nil {
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
 				http.SetCookie(w, &http.Cookie{
 					Name:   "jwt",
 					Value:  tokenString,

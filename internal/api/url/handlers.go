@@ -315,6 +315,7 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получаем URL-ы пользователя
 	urls, err := h.shortener.UserURLs(uid)
 	if err != nil {
 		slog.Info(
@@ -326,6 +327,23 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 
 	if len(urls) == 0 {
 		http.Error(w, http.StatusText(http.StatusNoContent), http.StatusNoContent)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	// Пишем заголовки
+	w.Header().Set("Content-Type", ContentTypeJSON)
+
+	// Данные в тело ответа будем записывать при помощи JSON енкодера
+	enc := json.NewEncoder(w)
+
+	err = enc.Encode(urls)
+	if err != nil {
+		slog.Info(
+			"failed to encode user URLs",
+			"error", err.Error())
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
 }

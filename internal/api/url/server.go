@@ -29,7 +29,7 @@ func NewServer(shortener interfaces.Service, cfg *config.Config) (*http.Server, 
 	router := chi.NewRouter()
 	// Включаем миддлаваре
 	tokenAuth := jwtauth.New("HS256", []byte(cfg.SecretKey), nil)
-	router.Use(jwtauth.Verifier(tokenAuth))
+	//router.Use(jwtauth.Verifier(tokenAuth))
 	router.Use(middleware.WithAuth(tokenAuth))
 	router.Use(middleware.WithLogging)
 	router.Use(middleware.WithGzip)

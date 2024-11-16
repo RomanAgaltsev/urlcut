@@ -168,18 +168,27 @@ func (r *DBRepository) GetUserURLs(uid uuid.UUID) ([]*model.URL, error) {
 	defer cancel()
 
 	// Получаем из БД URL по идентификатору пользователя при помощи retry операции
-	urls, err := backoff.RetryWithData(func() ([]queries.Url, error) {
+	urlsQuery, err := backoff.RetryWithData(func() ([]queries.Url, error) {
 		return r.q.GetUserURLs(ctx, uid)
 	}, backoff.NewExponentialBackOff())
 	if err != nil {
 		return nil, err
 	}
 
-	for _, _ = range urls {
+	// Создаем слайс для возврата ссылок пользователя
+	urls := make([]*model.URL, 0, len(urlsQuery))
 
+	// Перекладываем URL из результата запроса в слайс
+	for _, url := range urlsQuery {
+		urls = append(urls, &model.URL{
+			Long: url.LongUrl,
+			Base: url.BaseUrl,
+			ID:   url.UrlID,
+			UID:  url.Uid,
+		})
 	}
 
-	return nil, nil
+	return urls, nil
 }
 
 // Close закрывает соединение с БД.

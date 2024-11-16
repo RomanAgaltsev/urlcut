@@ -117,12 +117,23 @@ func (s *Shortener) Expand(id string) (*model.URL, error) {
 }
 
 func (s *Shortener) UserURLs(uid uuid.UUID) ([]model.UserURLDTO, error) {
-	_, err := s.repository.GetUserURLs(uid)
+	urls, err := s.repository.GetUserURLs(uid)
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	// Создаем слайс для возврата ссылок пользователя
+	userURLs := make([]model.UserURLDTO, 0, len(urls))
+
+	// Перекладываем URL пользователя в слайс структур DTO
+	for _, url := range urls {
+		userURLs = append(userURLs, model.UserURLDTO{
+			ShortURL:    url.Short(),
+			OriginalURL: url.Long,
+		})
+	}
+
+	return userURLs, nil
 }
 
 // Close закрывает репозиторий ссылок сокращателя.
