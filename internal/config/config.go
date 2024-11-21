@@ -40,7 +40,7 @@ func (cb *configBuilder) setDefaults() error {
 	cb.baseURL = "http://localhost:8080"
 	cb.fileStoragePath = "storage.json"
 	cb.databaseDSN = ""
-	cb.secretKey = ""
+	cb.secretKey = "secret"
 	cb.idLength = 8
 
 	return nil
