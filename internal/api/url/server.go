@@ -28,18 +28,26 @@ func NewServer(shortener interfaces.Service, cfg *config.Config) (*http.Server, 
 	// Создаем роутер
 	router := chi.NewRouter()
 	// Включаем миддлаваре
-	tokenAuth := jwtauth.New("HS256", []byte(cfg.SecretKey), nil)
-	//router.Use(jwtauth.Verifier(tokenAuth))
-	router.Use(middleware.WithAuth(tokenAuth))
 	router.Use(middleware.WithLogging)
 	router.Use(middleware.WithGzip)
 	// Настраиваем роутинг
-	router.Post("/", handlers.Shorten)
-	router.Post("/api/shorten", handlers.ShortenAPI)
-	router.Post("/api/shorten/batch", handlers.ShortenAPIBatch)
-	router.Get("/api/user/urls", handlers.UserUrls)
-	router.Get("/{id}", handlers.Expand)
-	router.Get("/ping", handlers.Ping)
+	// -- идентификатор не требуется
+	tokenAuth := jwtauth.New("HS256", []byte(cfg.SecretKey), nil)
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.WithAuth(tokenAuth))
+
+		r.Post("/", handlers.Shorten)
+		r.Post("/api/shorten", handlers.ShortenAPI)
+		r.Post("/api/shorten/batch", handlers.ShortenAPIBatch)
+		r.Get("/{id}", handlers.Expand)
+		r.Get("/ping", handlers.Ping)
+	})
+	// -- идентификатор требуется
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.WithID(tokenAuth))
+
+		r.Get("/api/user/urls", handlers.UserUrls)
+	})
 
 	return &http.Server{
 		Addr:    cfg.ServerPort,
