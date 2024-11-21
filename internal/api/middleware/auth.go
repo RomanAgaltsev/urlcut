@@ -10,7 +10,9 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
-const userIDClaimName = "uid"
+type userIDKey string
+
+const userIDClaimName userIDKey = "uid"
 
 func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -52,7 +54,7 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 			claims := token.PrivateClaims()
 
 			// uid пользователя передаем дальше через контекст
-			ctx := context.WithValue(r.Context(), userIDClaimName, claims[userIDClaimName])
+			ctx := context.WithValue(r.Context(), userIDClaimName, claims[string(userIDClaimName)])
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 		return http.HandlerFunc(fn)

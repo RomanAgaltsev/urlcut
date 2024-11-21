@@ -37,7 +37,6 @@ func TestShortener(t *testing.T) {
 		Long: longURL,
 		Base: baseURL,
 		ID:   urlID,
-		UID:  uid,
 	}
 
 	ctrl := gomock.NewController(t)

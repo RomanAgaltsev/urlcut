@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"testing"
 
 	"github.com/RomanAgaltsev/urlcut/internal/model"
@@ -28,11 +29,11 @@ func TestInMemoryRepository(t *testing.T) {
 
 	inMemoryRepository := NewInMemoryRepository(fileStoragePath)
 
-	urlStore, err := inMemoryRepository.Store(urls)
+	urlStore, err := inMemoryRepository.Store(context.TODO(), urls)
 	require.NoError(t, err)
 	assert.Nil(t, urlStore)
 
-	urlGet, err := inMemoryRepository.Get(urlID)
+	urlGet, err := inMemoryRepository.Get(context.TODO(), urlID)
 	require.NoError(t, err)
 	assert.NotNil(t, urlGet)
 	assert.Equal(t, url, urlGet)
