@@ -28,8 +28,7 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 				// Получить токен не удалось, выдаем куку
 				token, tokenString, err = auth.NewJWTToken(ja)
 				if err != nil {
-					//http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
 				//http.SetCookie(w, auth.NewCookieWithDefaults(tokenString))
@@ -41,8 +40,7 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 				// Валидировать токен не удалось, выдаем куку
 				token, tokenString, err = auth.NewJWTToken(ja)
 				if err != nil {
-					//http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
 				//http.SetCookie(w, auth.NewCookieWithDefaults(tokenString))
