@@ -2,11 +2,13 @@ package auth
 
 import (
 	"net/http"
-	
+
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/google/uuid"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
+
+type UserIDKey string
 
 const (
 	// DefaultCookieName содержит имя куки по умолчанию.
@@ -20,6 +22,9 @@ const (
 
 	// DefaultCookieSecure содержит признак защищенной куки по умолчанию.
 	DefaultCookieSecure = true
+
+	// UserIDClaimName содержит имя ключа идентификатора пользователя в контексте.
+	UserIDClaimName UserIDKey = "uid"
 )
 
 func NewJWTToken(ja *jwtauth.JWTAuth) (token jwt.Token, tokenString string, err error) {

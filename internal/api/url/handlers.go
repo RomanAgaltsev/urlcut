@@ -13,6 +13,7 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/database"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
+	"github.com/RomanAgaltsev/urlcut/internal/pkg/auth"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
 
 	"github.com/go-chi/chi/v5"
@@ -361,7 +362,7 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 // getUserUid получает идентификатор пользователя из контекста запроса.
 func getUserUID(r *http.Request) (uuid.UUID, error) {
 	// Получаем идентификатор-интерфейс пользователя из контекста
-	uidInterface := r.Context().Value("uid")
+	uidInterface := r.Context().Value(auth.UserIDClaimName)
 	if uidInterface == nil {
 		// Идентификатора нет
 		return uuid.Nil, ErrNoUserID
