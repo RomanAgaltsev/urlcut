@@ -231,6 +231,9 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Пишем заголовки
+	w.Header().Set("Content-Type", ContentTypeJSON)
+
 	// Проверяем на наличие конфликта данных - повторная отправка оригинального URL
 	// Если конфликт есть, то все равно возвращаем сокращенный URL - возвращается уже имеющийся в БД
 	// разница только в статусе ответа
@@ -239,9 +242,6 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusCreated)
 	}
-
-	// Пишем заголовки
-	w.Header().Set("Content-Type", ContentTypeJSON)
 
 	// Данные в тело ответа будем записывать при помощи JSON енкодера
 	enc := json.NewEncoder(w)
@@ -340,10 +340,10 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-
 	// Пишем заголовки
 	w.Header().Set("Content-Type", ContentTypeJSON)
+
+	w.WriteHeader(http.StatusOK)
 
 	// Данные в тело ответа будем записывать при помощи JSON енкодера
 	enc := json.NewEncoder(w)

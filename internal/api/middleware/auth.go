@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"github.com/RomanAgaltsev/urlcut/internal/pkg/auth"
 	"net/http"
 
@@ -14,8 +15,15 @@ const userIDClaimName = "uid"
 func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
+			for name, values := range r.Header {
+				// Loop over all values for the name.
+				for _, value := range values {
+					fmt.Println(name, value)
+				}
+			}
 			// Пробуем получить токен
 			tokenString := jwtauth.TokenFromCookie(r)
+			fmt.Println(tokenString)
 			token, err := ja.Decode(tokenString)
 			if err != nil || token == nil {
 				// Получить токен не удалось, выдаем куку
@@ -24,7 +32,8 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
-				http.SetCookie(w, auth.NewCookieWithDefaults(tokenString))
+				//http.SetCookie(w, auth.NewCookieWithDefaults(tokenString))
+				w.Header().Set("Cookie", fmt.Sprintf("jwt=%s", tokenString))
 			}
 
 			// Пробуем валидировать токен
@@ -35,7 +44,8 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
-				http.SetCookie(w, auth.NewCookieWithDefaults(tokenString))
+				//http.SetCookie(w, auth.NewCookieWithDefaults(tokenString))
+				w.Header().Set("Cookie", fmt.Sprintf("jwt=%s", tokenString))
 			}
 
 			// Валидацию прошли, получим утверждения

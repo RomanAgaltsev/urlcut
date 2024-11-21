@@ -3,10 +3,11 @@ package url
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/services"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth/v5"
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,6 +47,7 @@ func newHelper(t *testing.T) *helper {
 		BaseURL:         baseURL,
 		FileStoragePath: "",
 		DatabaseDSN:     "",
+		SecretKey:       "secret",
 		IDlength:        idLength,
 	}
 
@@ -53,6 +56,9 @@ func newHelper(t *testing.T) *helper {
 	require.NoError(t, err)
 	router := chi.NewRouter()
 	handlers := NewHandlers(service, cfg)
+
+	tokenAuth := jwtauth.New("HS256", []byte(cfg.SecretKey), nil)
+	router.Use(middleware.WithAuth(tokenAuth))
 
 	return &helper{
 		cfg:        cfg,
@@ -70,6 +76,17 @@ func TestShortenHandler(t *testing.T) {
 	httpSrv := httptest.NewServer(hlp.router)
 	defer httpSrv.Close()
 
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:   "jwt",
+		Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:   "/",
+		Secure: true,
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
 	tests := []struct {
 		name      string
 		reqMethod string
@@ -85,16 +102,7 @@ func TestShortenHandler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			req := resty.New().R()
-			//			req.SetCookie(&http.Cookie{
-			//					Name:   "jwt",
-			//					Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJiN2FlNTAyYS1kNDEyLTRjODQtOTE0MS05Y2M0YjEwMjU3MjgifQ.a2WtJfOI25Qizm0pD_YcmlKL7Lwr3O2BJc4XXzfNyHA",
-			//					Path:   "/",
-			//					//MaxAge: 300,
-			//					Secure: true,
-			//			})
-			req.SetContext(context.WithValue(context.Background(), "uid", map[string]interface{}{"uid": "b7ae502a-d412-4c84-9141-9cc4b1025728"}))
-
+			req := httpc.R()
 			req.Method = test.reqMethod
 			req.URL = httpSrv.URL
 
@@ -124,6 +132,17 @@ func TestShortenAPIHandler(t *testing.T) {
 	httpSrv := httptest.NewServer(hlp.router)
 	defer httpSrv.Close()
 
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:   "jwt",
+		Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:   "/",
+		Secure: true,
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
 	tests := []struct {
 		name      string
 		reqMethod string
@@ -139,7 +158,7 @@ func TestShortenAPIHandler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			req := resty.New().R()
+			req := httpc.R()
 			req.Method = test.reqMethod
 			req.URL = httpSrv.URL + "/api/shorten"
 
@@ -171,7 +190,7 @@ func TestShortenAPIHandler(t *testing.T) {
 	}
 
 	t.Run("[POST] [nil body]", func(t *testing.T) {
-		req := resty.New().R()
+		req := httpc.R()
 		req.Method = http.MethodPost
 		req.URL = httpSrv.URL + "/api/shorten"
 
@@ -191,7 +210,7 @@ func TestShortenAPIHandler(t *testing.T) {
 		}
 		reqBytes, _ := json.Marshal(request)
 
-		req := resty.New().R()
+		req := httpc.R()
 		req.Method = http.MethodPost
 		req.URL = httpSrv.URL + "/api/shorten"
 
@@ -210,6 +229,17 @@ func TestShortenAPIBatchHandler(t *testing.T) {
 
 	httpSrv := httptest.NewServer(hlp.router)
 	defer httpSrv.Close()
+
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:   "jwt",
+		Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:   "/",
+		Secure: true,
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
 
 	t.Run("[POST] [urls]", func(t *testing.T) {
 		type request struct {
@@ -235,7 +265,7 @@ func TestShortenAPIBatchHandler(t *testing.T) {
 
 		reqFinds := map[string]bool{"https://practicum.yandex.ru/": false, "https://translate.yandex.ru/": false}
 
-		req := resty.New().R()
+		req := httpc.R()
 		req.Method = http.MethodPost
 		req.URL = httpSrv.URL + "/api/shorten/batch"
 
@@ -266,14 +296,14 @@ func TestShortenAPIBatchHandler(t *testing.T) {
 			}
 		}
 
-		for url, found := range reqFinds {
-			assert.Truef(t, found, "url [%s] not found in response", url)
+		for urlF, found := range reqFinds {
+			assert.Truef(t, found, "url [%s] not found in response", urlF)
 		}
 
 	})
 
 	t.Run("[POST] [nil body]", func(t *testing.T) {
-		req := resty.New().R()
+		req := httpc.R()
 		req.Method = http.MethodPost
 		req.URL = httpSrv.URL + "/api/shorten/batch"
 
@@ -293,7 +323,7 @@ func TestShortenAPIBatchHandler(t *testing.T) {
 		}
 		reqBytes, _ := json.Marshal(request)
 
-		req := resty.New().R()
+		req := httpc.R()
 		req.Method = http.MethodPost
 		req.URL = httpSrv.URL + "/api/shorten/batch"
 
@@ -314,7 +344,7 @@ func TestShortenAPIBatchHandler(t *testing.T) {
 		requests := []request{}
 		reqBytes, _ := json.Marshal(requests)
 
-		req := resty.New().R()
+		req := httpc.R()
 		req.Method = http.MethodPost
 		req.URL = httpSrv.URL + "/api/shorten/batch"
 
@@ -335,6 +365,17 @@ func TestExpandHandler(t *testing.T) {
 	httpSrv := httptest.NewServer(hlp.router)
 	defer httpSrv.Close()
 
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:   "jwt",
+		Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:   "/",
+		Secure: true,
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
 	tests := []struct {
 		name      string
 		reqMethod string
@@ -348,7 +389,7 @@ func TestExpandHandler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			reqPost := resty.New().R()
+			reqPost := httpc.R()
 			reqPost.Method = http.MethodPost
 			reqPost.URL = httpSrv.URL
 
@@ -361,7 +402,7 @@ func TestExpandHandler(t *testing.T) {
 			shortenedURL := string(resPost.Body())
 			urlID := strings.TrimPrefix(shortenedURL, hlp.cfg.BaseURL+"/")
 
-			req := resty.New().R()
+			req := httpc.R()
 			req.Method = test.reqMethod
 			req.URL = httpSrv.URL + "/" + urlID
 
@@ -394,10 +435,19 @@ func TestExpandHandler(t *testing.T) {
 //	httpSrv := httptest.NewServer(hlp.router)
 //	defer httpSrv.Close()
 //
+//	u, _ := url.Parse(httpSrv.URL)
+//	jar, _ := cookiejar.New(nil)
+//	jar.SetCookies(u, []*http.Cookie{{
+//		Name:   "jwt",
+//		Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+//		Path:   "/",
+//		Secure: true,
+//	}})
+//
+//	httpc := resty.New().SetCookieJar(jar)
+//
 //	t.Run("[GET] [ping]", func(t *testing.T) {
-//		res, err := resty.
-//			New().
-//			R().
+//		res, err := httpc.R().
 //			Get(httpSrv.URL + "/ping")
 //		assert.NoError(t, err)
 //		assert.Equal(t, http.StatusOK, res.StatusCode())
@@ -415,10 +465,19 @@ func TestLoggerMiddleWare(t *testing.T) {
 	httpSrv := httptest.NewServer(hlp.router)
 	defer httpSrv.Close()
 
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:   "jwt",
+		Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:   "/",
+		Secure: true,
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
 	t.Run("[POST] [LoggerMiddleware] [https://practicum.yandex.ru/]", func(t *testing.T) {
-		res, err := resty.
-			New().
-			R().
+		res, err := httpc.R().
 			SetHeader("Content-Type", ContentTypeText).
 			SetBody("https://practicum.yandex.ru/").
 			Post(httpSrv.URL)
@@ -444,6 +503,17 @@ func TestCompressMiddleware(t *testing.T) {
 	httpSrv := httptest.NewServer(hlp.router)
 	defer httpSrv.Close()
 
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:   "jwt",
+		Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:   "/",
+		Secure: true,
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
 	t.Run("[POST] [CompressMiddleware gzip/''] [https://practicum.yandex.ru/]", func(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		gzipWriter := gzip.NewWriter(buf)
@@ -452,9 +522,7 @@ func TestCompressMiddleware(t *testing.T) {
 		err = gzipWriter.Close()
 		require.NoError(t, err)
 
-		res, err := resty.
-			New().
-			R().
+		res, err := httpc.R().
 			SetHeader("Content-Encoding", "gzip").
 			SetHeader("Accept-Encoding", "").
 			SetBody(buf.Bytes()).
