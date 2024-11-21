@@ -28,7 +28,7 @@ const (
 )
 
 func NewJWTToken(ja *jwtauth.JWTAuth) (token jwt.Token, tokenString string, err error) {
-	return ja.Encode(map[string]interface{}{"uid": uuid.New().String()})
+	return ja.Encode(map[string]interface{}{string(UserIDClaimName): uuid.New().String()})
 }
 
 // NewCookieWithDefaults создает новую куку со значениями по умолчанию и переданным в параметре значением.
