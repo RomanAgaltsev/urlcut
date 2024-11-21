@@ -14,15 +14,15 @@ import (
 func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			for name, values := range r.Header {
-				// Loop over all values for the name.
-				for _, value := range values {
-					fmt.Println(name, value)
-				}
-			}
+			//			for name, values := range r.Header {
+			//				// Loop over all values for the name.
+			//				for _, value := range values {
+			//					fmt.Println(name, value)
+			//				}
+			//			}
 			// Пробуем получить токен
 			tokenString := jwtauth.TokenFromCookie(r)
-			fmt.Println(tokenString)
+			//		fmt.Println(tokenString)
 			token, err := ja.Decode(tokenString)
 			if err != nil || token == nil {
 				// Получить токен не удалось, выдаем куку
