@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"testing"
 
 	"github.com/RomanAgaltsev/urlcut/internal/config"
@@ -45,14 +46,14 @@ func TestShortener(t *testing.T) {
 	mockRepo := mocks.NewMockRepository(ctrl)
 
 	mockRepo.EXPECT().
-		Store(gomock.Any()).
+		Store(context.TODO(), gomock.Any()).
 		Return(nil, nil).
 		Times(1)
 
 	shortener, err := NewShortener(mockRepo, cfg)
 	require.NoError(t, err)
 
-	urlS, err := shortener.Shorten(longURL, uid)
+	urlS, err := shortener.Shorten(context.TODO(), longURL, uid)
 	require.NoError(t, err)
 	assert.Equal(t, url.Long, urlS.Long)
 	assert.Equal(t, url.Base, urlS.Base)
@@ -61,7 +62,7 @@ func TestShortener(t *testing.T) {
 
 	mockRepo.
 		EXPECT().
-		Get(urlS.ID).
+		Get(context.TODO(), urlS.ID).
 		Return(&model.URL{
 			Long: urlS.Long,
 			Base: urlS.Base,
@@ -70,7 +71,7 @@ func TestShortener(t *testing.T) {
 		}, nil).
 		Times(1)
 
-	urlE, err := shortener.Expand(urlS.ID)
+	urlE, err := shortener.Expand(context.TODO(), urlS.ID)
 	require.NoError(t, err)
 	assert.Equal(t, urlS, urlE)
 

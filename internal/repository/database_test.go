@@ -60,10 +60,10 @@ func TestDBRepository(t *testing.T) {
 		q:  q,
 	}
 
-	_, err = dbRepository.Store([]*model.URL{urlS})
+	_, err = dbRepository.Store(context.TODO(), []*model.URL{urlS})
 	require.NoError(t, err)
 
-	urlG, err := dbRepository.Get(urlID)
+	urlG, err := dbRepository.Get(context.TODO(), urlID)
 	require.NoError(t, err)
 
 	assert.Equal(t, urlS, urlG)
