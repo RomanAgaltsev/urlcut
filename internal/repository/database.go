@@ -187,6 +187,10 @@ func (r *DBRepository) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]*model
 	return urls, nil
 }
 
+func (r *DBRepository) DeleteUserURLs(ctx context.Context, uid uuid.UUID, urls []*model.URL) error {
+	return nil
+}
+
 // Close закрывает соединение с БД.
 func (r *DBRepository) Close() error {
 	return r.db.Close()

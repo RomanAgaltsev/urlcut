@@ -138,6 +138,10 @@ func (s *Shortener) UserURLs(ctx context.Context, uid uuid.UUID) ([]model.UserUR
 	return userURLs, nil
 }
 
+func (s *Shortener) DeleteUserURLs(ctx context.Context, shortURLs model.ShortURLsDTO) error {
+	return nil
+}
+
 // Close закрывает репозиторий ссылок сокращателя.
 func (s *Shortener) Close() error {
 	return s.repository.Close()

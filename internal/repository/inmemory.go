@@ -76,6 +76,10 @@ func (r *InMemoryRepository) GetUserURLs(_ context.Context, uid uuid.UUID) ([]*m
 	return urls, nil
 }
 
+func (r *InMemoryRepository) DeleteUserURLs(ctx context.Context, uid uuid.UUID, urls []*model.URL) error {
+	return nil
+}
+
 // Close сохраняет данные из in memory репозитория в файловое хранилище.
 func (r *InMemoryRepository) Close() error {
 	return writeToFile(r.f, r.m)

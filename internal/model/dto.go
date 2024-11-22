@@ -28,4 +28,9 @@ type (
 		ShortURL    string `json:"short_url"`
 		OriginalURL string `json:"original_url"`
 	}
+
+	// ShortURLsDTO - структура тела запроса на удаление URL пользователя.
+	ShortURLsDTO struct {
+		IDs []string
+	}
 )

@@ -369,6 +369,27 @@ func (h *Handlers) UserUrlsDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
+
+	// Читаем массив идентификаторов URL из тела запроса
+	urlArray, _ := io.ReadAll(r.Body)
+	defer func() { _ = r.Body.Close() }()
+
+	var shortURLs []string
+	err = json.Unmarshal(urlArray, &shortURLs)
+	if err != nil {
+		slog.Info(
+			"failed to unmarshal URL ID array",
+			"error", err.Error())
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяем, есть ли идентификаторы
+	if len(shortURLs) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 }
 
 // getUserUid получает идентификатор пользователя из контекста запроса.
