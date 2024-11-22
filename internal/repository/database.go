@@ -147,9 +147,10 @@ func (r *DBRepository) Get(ctx context.Context, id string) (*model.URL, error) {
 
 	// Возвращаем данные URL
 	return &model.URL{
-		Long: url.LongUrl,
-		Base: url.BaseUrl,
-		ID:   url.UrlID,
+		Long:    url.LongUrl,
+		Base:    url.BaseUrl,
+		ID:      url.UrlID,
+		Deleted: url.IsDeleted,
 	}, nil
 }
 

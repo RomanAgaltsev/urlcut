@@ -12,7 +12,7 @@ import (
 )
 
 const getURL = `-- name: GetURL :one
-SELECT id, long_url, base_url, url_id, created_at, uid
+SELECT id, long_url, base_url, url_id, created_at, uid, is_deleted
 FROM urls
 WHERE url_id = $1 LIMIT 1
 `
@@ -27,14 +27,16 @@ func (q *Queries) GetURL(ctx context.Context, urlID string) (Url, error) {
 		&i.UrlID,
 		&i.CreatedAt,
 		&i.Uid,
+		&i.IsDeleted,
 	)
 	return i, err
 }
 
 const getURLByLong = `-- name: GetURLByLong :one
-SELECT id, long_url, base_url, url_id, created_at, uid
+SELECT id, long_url, base_url, url_id, created_at, uid, is_deleted
 FROM urls
-WHERE long_url = $1 LIMIT 1
+WHERE long_url = $1
+  AND is_deleted = FALSE LIMIT 1
 `
 
 func (q *Queries) GetURLByLong(ctx context.Context, longUrl string) (Url, error) {
@@ -47,14 +49,16 @@ func (q *Queries) GetURLByLong(ctx context.Context, longUrl string) (Url, error)
 		&i.UrlID,
 		&i.CreatedAt,
 		&i.Uid,
+		&i.IsDeleted,
 	)
 	return i, err
 }
 
 const getUserURLs = `-- name: GetUserURLs :many
-SELECT id, long_url, base_url, url_id, created_at, uid
+SELECT id, long_url, base_url, url_id, created_at, uid, is_deleted
 FROM urls
 WHERE uid = $1
+  AND is_deleted = FALSE
 `
 
 func (q *Queries) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]Url, error) {
@@ -73,6 +77,7 @@ func (q *Queries) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]Url, error)
 			&i.UrlID,
 			&i.CreatedAt,
 			&i.Uid,
+			&i.IsDeleted,
 		); err != nil {
 			return nil, err
 		}
@@ -89,7 +94,7 @@ func (q *Queries) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]Url, error)
 
 const storeURL = `-- name: StoreURL :one
 INSERT INTO urls (long_url, base_url, url_id, uid)
-VALUES ($1, $2, $3, $4) RETURNING id, long_url, base_url, url_id, created_at, uid
+VALUES ($1, $2, $3, $4) RETURNING id, long_url, base_url, url_id, created_at, uid, is_deleted
 `
 
 type StoreURLParams struct {
@@ -114,6 +119,7 @@ func (q *Queries) StoreURL(ctx context.Context, arg StoreURLParams) (Url, error)
 		&i.UrlID,
 		&i.CreatedAt,
 		&i.Uid,
+		&i.IsDeleted,
 	)
 	return i, err
 }

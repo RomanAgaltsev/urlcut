@@ -17,4 +17,5 @@ type Url struct {
 	UrlID     string
 	CreatedAt time.Time
 	Uid       uuid.UUID
+	IsDeleted bool
 }
