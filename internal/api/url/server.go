@@ -47,6 +47,7 @@ func NewServer(shortener interfaces.Service, cfg *config.Config) (*http.Server, 
 		r.Use(middleware.WithID(tokenAuth))
 
 		r.Get("/api/user/urls", handlers.UserUrls)
+		r.Delete("/api/user/urls", handlers.UserUrlsDelete)
 	})
 
 	return &http.Server{

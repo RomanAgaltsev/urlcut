@@ -359,6 +359,18 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handlers) UserUrlsDelete(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Получаем идентификатор пользователя
+	uid, err := getUserUID(r)
+	if err != nil {
+		// Что-то пошло не так - в авторизации отказываем
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+}
+
 // getUserUid получает идентификатор пользователя из контекста запроса.
 func getUserUID(r *http.Request) (uuid.UUID, error) {
 	// Получаем идентификатор-интерфейс пользователя из контекста
