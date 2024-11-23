@@ -2,12 +2,14 @@ package repository
 
 import (
 	"context"
-	"github.com/google/uuid"
+
 	"testing"
 
 	"github.com/RomanAgaltsev/urlcut/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/google/uuid"
 )
 
 func TestInMemoryRepository(t *testing.T) {

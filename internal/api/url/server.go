@@ -31,9 +31,10 @@ func NewServer(shortener interfaces.Service, cfg *config.Config) (*http.Server, 
 	router.Use(middleware.WithLogging)
 	router.Use(middleware.WithGzip)
 	// Настраиваем роутинг
-	// -- идентификатор не требуется
+	// -- идентификатор пользователя не требуется - выдаем при отсутствии
 	tokenAuth := jwtauth.New("HS256", []byte(cfg.SecretKey), nil)
 	router.Group(func(r chi.Router) {
+		// Миддлваре, проверяющая и выдающая токен
 		r.Use(middleware.WithAuth(tokenAuth))
 
 		r.Post("/", handlers.Shorten)
@@ -44,6 +45,7 @@ func NewServer(shortener interfaces.Service, cfg *config.Config) (*http.Server, 
 	})
 	// -- идентификатор требуется
 	router.Group(func(r chi.Router) {
+		// Миддвале, проверяющая наличие идентификтара
 		r.Use(middleware.WithID(tokenAuth))
 
 		r.Get("/api/user/urls", handlers.UserUrls)

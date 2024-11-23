@@ -24,6 +24,7 @@ const (
 	UserIDClaimName UserIDKey = "uid"
 )
 
+// NewJWTToken создает новый JWT токен.
 func NewJWTToken(ja *jwtauth.JWTAuth) (token jwt.Token, tokenString string, err error) {
 	return ja.Encode(map[string]interface{}{string(UserIDClaimName): uuid.New().String()})
 }

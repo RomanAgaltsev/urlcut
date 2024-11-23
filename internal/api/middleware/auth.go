@@ -13,6 +13,7 @@ import (
 func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
+			// Переменные для токена
 			var tokenString string
 			var token jwt.Token
 			var err error
@@ -46,6 +47,7 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 				}
 			}
 
+			// Устанавливает куку в ответ
 			http.SetCookie(w, auth.NewCookieWithDefaults(tokenString))
 			w.Header().Set("Authorization", tokenString)
 

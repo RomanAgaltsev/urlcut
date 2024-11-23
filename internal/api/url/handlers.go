@@ -318,6 +318,7 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяем, если ли данные для возврата
 	if len(urls) == 0 {
 		http.Error(w, http.StatusText(http.StatusNoContent), http.StatusNoContent)
 		return
