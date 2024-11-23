@@ -16,6 +16,7 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/logger"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
+	"github.com/RomanAgaltsev/urlcut/internal/pkg/random"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
 	"github.com/RomanAgaltsev/urlcut/internal/services"
 
@@ -79,10 +80,9 @@ func TestShortenHandler(t *testing.T) {
 	u, _ := url.Parse(httpSrv.URL)
 	jar, _ := cookiejar.New(nil)
 	jar.SetCookies(u, []*http.Cookie{{
-		Name:   "jwt",
-		Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
-		Path:   "/",
-		Secure: true,
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
 	}})
 
 	httpc := resty.New().SetCookieJar(jar)
@@ -135,10 +135,9 @@ func TestShortenAPIHandler(t *testing.T) {
 	u, _ := url.Parse(httpSrv.URL)
 	jar, _ := cookiejar.New(nil)
 	jar.SetCookies(u, []*http.Cookie{{
-		Name:   "jwt",
-		Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
-		Path:   "/",
-		Secure: true,
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
 	}})
 
 	httpc := resty.New().SetCookieJar(jar)
@@ -233,10 +232,9 @@ func TestShortenAPIBatchHandler(t *testing.T) {
 	u, _ := url.Parse(httpSrv.URL)
 	jar, _ := cookiejar.New(nil)
 	jar.SetCookies(u, []*http.Cookie{{
-		Name:   "jwt",
-		Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
-		Path:   "/",
-		Secure: true,
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
 	}})
 
 	httpc := resty.New().SetCookieJar(jar)
@@ -368,10 +366,9 @@ func TestExpandHandler(t *testing.T) {
 	u, _ := url.Parse(httpSrv.URL)
 	jar, _ := cookiejar.New(nil)
 	jar.SetCookies(u, []*http.Cookie{{
-		Name:   "jwt",
-		Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
-		Path:   "/",
-		Secure: true,
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
 	}})
 
 	httpc := resty.New().SetCookieJar(jar)
@@ -428,31 +425,91 @@ func TestExpandHandler(t *testing.T) {
 	})
 }
 
-//func TestPingHandler(t *testing.T) {
-//	hlp := newHelper(t)
-//	hlp.router.Get("/ping", hlp.handlers.Ping)
-//
-//	httpSrv := httptest.NewServer(hlp.router)
-//	defer httpSrv.Close()
-//
-//	u, _ := url.Parse(httpSrv.URL)
-//	jar, _ := cookiejar.New(nil)
-//	jar.SetCookies(u, []*http.Cookie{{
-//		Name:   "jwt",
-//		Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
-//		Path:   "/",
-//		Secure: true,
-//	}})
-//
-//	httpc := resty.New().SetCookieJar(jar)
-//
-//	t.Run("[GET] [ping]", func(t *testing.T) {
-//		res, err := httpc.R().
-//			Get(httpSrv.URL + "/ping")
-//		assert.NoError(t, err)
-//		assert.Equal(t, http.StatusOK, res.StatusCode())
-//	})
-//}
+func TestPingHandler(t *testing.T) {
+	hlp := newHelper(t)
+	hlp.router.Get("/ping", hlp.handlers.Ping)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
+	res, err := httpc.R().
+		Get(httpSrv.URL + "/ping")
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, res.StatusCode())
+
+}
+
+func TestUserUrlsHandler(t *testing.T) {
+	hlp := newHelper(t)
+	hlp.router.Get("/api/user/urls", hlp.handlers.UserUrls)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
+	req := httpc.R()
+	req.Method = http.MethodGet
+	req.URL = httpSrv.URL + "/api/user/urls"
+
+	res, err := req.
+		SetHeader("Content-Type", ContentTypeText).
+		Send()
+	assert.NoError(t, err)
+
+	assert.Equal(t, http.StatusNoContent, res.StatusCode())
+}
+
+func TestUserUrlsDeleteHandler(t *testing.T) {
+	hlp := newHelper(t)
+	hlp.router.Delete("/api/user/urls", hlp.handlers.UserUrlsDelete)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
+	ids := []string{random.String(8), random.String(8), random.String(8)}
+	idsBytes, _ := json.Marshal(ids)
+
+	req := httpc.R()
+	req.Method = http.MethodDelete
+	req.URL = httpSrv.URL + "/api/user/urls"
+
+	res, err := req.
+		SetHeader("Content-Type", ContentTypeJSON).
+		SetBody(bytes.NewReader(idsBytes)).
+		Send()
+	assert.NoError(t, err)
+
+	assert.Equal(t, http.StatusAccepted, res.StatusCode())
+}
 
 func TestLoggerMiddleWare(t *testing.T) {
 	err := logger.Initialize()
@@ -468,10 +525,9 @@ func TestLoggerMiddleWare(t *testing.T) {
 	u, _ := url.Parse(httpSrv.URL)
 	jar, _ := cookiejar.New(nil)
 	jar.SetCookies(u, []*http.Cookie{{
-		Name:   "jwt",
-		Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
-		Path:   "/",
-		Secure: true,
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
 	}})
 
 	httpc := resty.New().SetCookieJar(jar)
@@ -506,10 +562,9 @@ func TestCompressMiddleware(t *testing.T) {
 	u, _ := url.Parse(httpSrv.URL)
 	jar, _ := cookiejar.New(nil)
 	jar.SetCookies(u, []*http.Cookie{{
-		Name:   "jwt",
-		Value:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
-		Path:   "/",
-		Secure: true,
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
 	}})
 
 	httpc := resty.New().SetCookieJar(jar)
@@ -559,4 +614,35 @@ func TestCompressMiddleware(t *testing.T) {
 		assert.Equal(t, ContentTypeText, res.Header().Get("Content-Type"))
 		assert.Equal(t, strings.HasPrefix(shortenedURL, hlp.cfg.BaseURL), true)
 	})
+}
+
+func TestAuthIDMiddleware(t *testing.T) {
+	hlp := newHelper(t)
+	tokenAuth := jwtauth.New("HS256", []byte(hlp.cfg.SecretKey), nil)
+	hlp.router.Use(middleware.WithID(tokenAuth))
+	hlp.router.Get("/auth", hlp.handlers.UserUrls)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
+	req := httpc.R()
+	req.Method = http.MethodGet
+	req.URL = httpSrv.URL + "/auth"
+
+	res, err := req.
+		SetHeader("Content-Type", ContentTypeText).
+		Send()
+	assert.NoError(t, err)
+
+	assert.Equal(t, http.StatusNoContent, res.StatusCode())
 }
