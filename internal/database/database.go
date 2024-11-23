@@ -14,10 +14,7 @@ import (
 func NewConnection(ctx context.Context, driver string, databaseDSN string) (*sql.DB, error) {
 	db, err := sql.Open(driver, databaseDSN)
 	if err != nil {
-		slog.Error(
-			"failed to open DB connection",
-			slog.String("error", err.Error()),
-		)
+		slog.Error("failed to open DB connection", slog.String("error", err.Error()))
 		return nil, err
 	}
 
@@ -28,10 +25,7 @@ func NewConnection(ctx context.Context, driver string, databaseDSN string) (*sql
 	db.SetConnMaxLifetime(30 * time.Second)
 
 	if err = db.PingContext(ctx); err != nil {
-		slog.Error(
-			"failed to ping DB",
-			slog.String("error", err.Error()),
-		)
+		slog.Error("failed to ping DB", slog.String("error", err.Error()))
 		return nil, err
 	}
 
@@ -43,33 +37,21 @@ func NewConnection(ctx context.Context, driver string, databaseDSN string) (*sql
 func Migrate(ctx context.Context, databaseDSN string) {
 	db, err := goose.OpenDBWithDriver("pgx", databaseDSN)
 	if err != nil {
-		slog.Error(
-			"goose: failed to open DB connection",
-			slog.String("error", err.Error()),
-		)
+		slog.Error("goose: failed to open DB connection", slog.String("error", err.Error()))
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
-			slog.Error(
-				"goose: failed to close DB connection",
-				slog.String("error", err.Error()),
-			)
+			slog.Error("goose: failed to close DB connection", slog.String("error", err.Error()))
 		}
 	}()
 
 	if err = goose.SetDialect("postgres"); err != nil {
-		slog.Error(
-			"goose: failed to set dialect",
-			slog.String("error", err.Error()),
-		)
+		slog.Error("goose: failed to set dialect", slog.String("error", err.Error()))
 	}
 
 	goose.SetBaseFS(migrations.Migrations)
 
 	if err = goose.UpContext(ctx, db, "."); err != nil {
-		slog.Error(
-			"goose: failed to run migrations",
-			slog.String("error", err.Error()),
-		)
+		slog.Error("goose: failed to run migrations", slog.String("error", err.Error()))
 	}
 }

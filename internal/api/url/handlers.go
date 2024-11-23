@@ -64,9 +64,7 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 	// Выполняем сокращение полученного оригинального URL
 	url, err := h.shortener.Shorten(ctx, string(longURL), uid)
 	if err != nil && !errors.Is(err, repository.ErrConflict) {
-		slog.Info(
-			"failed to short URL",
-			"error", err.Error())
+		slog.Info("failed to short URL", "error", err.Error())
 		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
@@ -89,9 +87,7 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 	// Пишем сокращенный URL в тело ответа
 	_, err = w.Write([]byte(shortURL))
 	if err != nil {
-		slog.Info(
-			"failed to write shorten URL to response",
-			"error", err.Error())
+		slog.Info("failed to write shorten URL to response", "error", err.Error())
 		http.Error(w, "please look at logs", http.StatusInternalServerError)
 	}
 }
@@ -115,9 +111,7 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 	// Читаем тело запроса
 	var req model.URLDTO
 	if err := dec.Decode(&req); err != nil {
-		slog.Info(
-			"failed to unmarshal long URL",
-			"error", err.Error())
+		slog.Info("failed to unmarshal long URL", "error", err.Error())
 		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
@@ -132,9 +126,7 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 	// Выполняем сокращение URL
 	url, errShort := h.shortener.Shorten(ctx, longURL, uid)
 	if errShort != nil && !errors.Is(errShort, repository.ErrConflict) {
-		slog.Info(
-			"failed to short URL",
-			"error", errShort.Error())
+		slog.Info("failed to short URL", "error", errShort.Error())
 		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
@@ -142,9 +134,7 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 	// Сокращенный URL преобразуем в JSON
 	res, err := json.Marshal(model.ResultDTO{Result: url.Short()})
 	if err != nil {
-		slog.Info(
-			"failed to marshal shorten URL",
-			"error", err.Error())
+		slog.Info("failed to marshal shorten URL", "error", err.Error())
 		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
@@ -165,9 +155,7 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 	// Пишем сокращенный URL в тело ответа
 	_, err = w.Write(res)
 	if err != nil {
-		slog.Info(
-			"failed to write shorten URL to response",
-			"error", err.Error())
+		slog.Info("failed to write shorten URL to response", "error", err.Error())
 		http.Error(w, "please look at logs", http.StatusInternalServerError)
 	}
 }
@@ -194,9 +182,7 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 	// Читаем открывающую скобку "["
 	_, err = dec.Token()
 	if err != nil {
-		slog.Info(
-			"failed to decode batch",
-			"error", err.Error())
+		slog.Info("failed to decode batch", "error", err.Error())
 		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
@@ -205,9 +191,7 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 	for dec.More() {
 		var batchReq model.IncomingBatchDTO
 		if err := dec.Decode(&batchReq); err != nil {
-			slog.Info(
-				"failed to decode batch element",
-				"error", err.Error())
+			slog.Info("failed to decode batch element", "error", err.Error())
 			http.Error(w, "please look at logs", http.StatusInternalServerError)
 			return
 		}
@@ -225,9 +209,7 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 	// Сокращаем все URL батча, которые были прочитаны
 	batchShortened, err := h.shortener.ShortenBatch(ctx, batch, uid)
 	if err != nil && !errors.Is(err, repository.ErrConflict) {
-		slog.Info(
-			"failed to short URL",
-			"error", err.Error())
+		slog.Info("failed to short URL", "error", err.Error())
 		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
@@ -249,9 +231,7 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 
 	err = enc.Encode(batchShortened)
 	if err != nil {
-		slog.Info(
-			"failed to encode batch",
-			"error", err.Error())
+		slog.Info("failed to encode batch", "error", err.Error())
 		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
@@ -275,9 +255,7 @@ func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
 	// Получаем URL по идентификатору
 	url, err := h.shortener.Expand(ctx, urlID)
 	if err != nil {
-		slog.Info(
-			"failed to expand URL",
-			"error", err.Error())
+		slog.Info("failed to expand URL", "error", err.Error())
 		http.Error(w, "please look at logs", http.StatusNotFound)
 		return
 	}
@@ -335,9 +313,7 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 	// Получаем URL-ы пользователя
 	urls, err := h.shortener.UserURLs(ctx, uid)
 	if err != nil {
-		slog.Info(
-			"failed to fetch user URLs",
-			"error", err.Error())
+		slog.Info("failed to fetch user URLs", "error", err.Error())
 		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
@@ -357,9 +333,7 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 
 	err = enc.Encode(urls)
 	if err != nil {
-		slog.Info(
-			"failed to encode user URLs",
-			"error", err.Error())
+		slog.Info("failed to encode user URLs", "error", err.Error())
 		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
@@ -384,9 +358,7 @@ func (h *Handlers) UserUrlsDelete(w http.ResponseWriter, r *http.Request) {
 	var shortURLs []string
 	err = json.Unmarshal(urlArray, &shortURLs)
 	if err != nil {
-		slog.Info(
-			"failed to unmarshal URL ID array",
-			"error", err.Error())
+		slog.Info("failed to unmarshal URL ID array", "error", err.Error())
 		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}
@@ -400,9 +372,7 @@ func (h *Handlers) UserUrlsDelete(w http.ResponseWriter, r *http.Request) {
 	// Устанавливаем пометки удаления
 	err = h.shortener.DeleteUserURLs(ctx, uid, &model.ShortURLsDTO{IDs: shortURLs})
 	if err != nil {
-		slog.Info(
-			"failed to delete user URLs",
-			"error", err.Error())
+		slog.Info("failed to delete user URLs", "error", err.Error())
 		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
 	}

@@ -128,33 +128,25 @@ func (a *App) runShortenerApp() error {
 
 		// Выключаем HTTP сервер
 		if err := a.server.Shutdown(ctx); err != nil {
-			slog.Error(
-				"HTTP server shutdown error",
-				slog.String("error", err.Error()),
+			slog.Error("HTTP server shutdown error", slog.String("error", err.Error()),
 			)
 		}
 
 		// Выключаем сервис сокращателя, включая закрытие хранилища
 		if err := a.shortener.Close(); err != nil {
-			slog.Error(
-				"failed to close shortener service",
-				slog.String("error", err.Error()),
+			slog.Error("failed to close shortener service", slog.String("error", err.Error()),
 			)
 		}
 
 		close(done)
 	}()
 
-	slog.Info(
-		"starting HTTP server",
-		"addr", a.server.Addr,
+	slog.Info("starting HTTP server", "addr", a.server.Addr,
 	)
 
 	// Запускаем HTTP сервер
 	if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		slog.Error(
-			"HTTP server error",
-			slog.String("error", err.Error()),
+		slog.Error("HTTP server error", slog.String("error", err.Error()),
 		)
 		return err
 	}
