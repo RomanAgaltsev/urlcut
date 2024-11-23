@@ -201,16 +201,12 @@ func (r *DBRepository) DeleteURLs(ctx context.Context, urls []*model.URL) error 
 
 	// Обходим полученный слайс URL и обновляем записи в БД с использованием retry операций
 	for _, url := range urls {
-		//		_, err = backoff.RetryWithData(func() (queries.Url, error) {
-		//			return qtx.DeleteURL(ctx, queries.DeleteURLParams{
-		//				UrlID: url.ID,
-		//				Uid:   url.UID,
-		//			})
-		//		}, backoff.NewExponentialBackOff())
-		err := qtx.DeleteURL(ctx, queries.DeleteURLParams{
-			UrlID: url.ID,
-			Uid:   url.UID,
-		})
+		err = backoff.Retry(func() error {
+			return qtx.DeleteURL(ctx, queries.DeleteURLParams{
+				UrlID: url.ID,
+				Uid:   url.UID,
+			})
+		}, backoff.NewExponentialBackOff())
 
 		// Проверяем ошибку получения конфликтного URL
 		if err != nil {
