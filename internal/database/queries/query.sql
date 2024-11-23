@@ -23,4 +23,4 @@ WHERE uid = $1
 UPDATE urls
 SET is_deleted = TRUE
 WHERE url_id = $1
-  AND uid = $2 RETURNING *;
+  AND uid = $2;

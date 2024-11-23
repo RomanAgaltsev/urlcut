@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"testing"
 
 	"github.com/RomanAgaltsev/urlcut/internal/model"
@@ -18,11 +19,14 @@ func TestInMemoryRepository(t *testing.T) {
 		urlID   = "1q2w3e4r"
 	)
 
+	uid, _ := uuid.NewRandom()
+
 	url := &model.URL{
 		Long:   longURL,
 		Base:   BaseURL,
 		ID:     urlID,
 		CorrID: "",
+		UID:    uid,
 	}
 
 	urls := []*model.URL{url}
@@ -37,6 +41,13 @@ func TestInMemoryRepository(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, urlGet)
 	assert.Equal(t, url, urlGet)
+
+	userURLs, err := inMemoryRepository.GetUserURLs(context.TODO(), uid)
+	require.NoError(t, err)
+	assert.IsType(t, []*model.URL{url}, userURLs)
+
+	err = inMemoryRepository.DeleteURLs(context.TODO(), urls)
+	require.NoError(t, err)
 
 	err = inMemoryRepository.Close()
 	require.NoError(t, err)

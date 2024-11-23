@@ -15,7 +15,7 @@ const deleteURL = `-- name: DeleteURL :exec
 UPDATE urls
 SET is_deleted = TRUE
 WHERE url_id = $1
-  AND uid = $2 RETURNING id, long_url, base_url, url_id, created_at, uid, is_deleted
+  AND uid = $2
 `
 
 type DeleteURLParams struct {
