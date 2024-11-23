@@ -187,8 +187,38 @@ func (r *DBRepository) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]*model
 	return urls, nil
 }
 
-func (r *DBRepository) DeleteUserURLs(ctx context.Context, uid uuid.UUID, urls []*model.URL) error {
-	return nil
+func (r *DBRepository) DeleteURLs(ctx context.Context, urls []*model.URL) error {
+	// Начинаем транзакцию
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	// Откладываем откат транзакции - если всё будет ок, эффекта не будет
+	defer func() { _ = tx.Rollback() }()
+
+	// Получаем подготовленные запросы с ранее открытой транзакцией
+	qtx := r.q.WithTx(tx)
+
+	// Обходим полученный слайс URL и обновляем записи в БД с использованием retry операций
+	for _, url := range urls {
+		//		_, err = backoff.RetryWithData(func() (queries.Url, error) {
+		//			return qtx.DeleteURL(ctx, queries.DeleteURLParams{
+		//				UrlID: url.ID,
+		//				Uid:   url.UID,
+		//			})
+		//		}, backoff.NewExponentialBackOff())
+		err := qtx.DeleteURL(ctx, queries.DeleteURLParams{
+			UrlID: url.ID,
+			Uid:   url.UID,
+		})
+
+		// Проверяем ошибку получения конфликтного URL
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 // Close закрывает соединение с БД.

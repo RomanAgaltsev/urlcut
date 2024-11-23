@@ -14,7 +14,7 @@ type Service interface {
 	ShortenBatch(ctx context.Context, batch []model.IncomingBatchDTO, uid uuid.UUID) ([]model.OutgoingBatchDTO, error)
 	Expand(ctx context.Context, id string) (*model.URL, error)
 	UserURLs(ctx context.Context, uid uuid.UUID) ([]model.UserURLDTO, error)
-	DeleteUserURLs(ctx context.Context, shortURLs model.ShortURLsDTO) error
+	DeleteUserURLs(ctx context.Context, uid uuid.UUID, shortURLs *model.ShortURLsDTO) error
 	Close() error
 }
 
@@ -23,6 +23,6 @@ type Repository interface {
 	Store(ctx context.Context, urls []*model.URL) (*model.URL, error)
 	Get(ctx context.Context, id string) (*model.URL, error)
 	GetUserURLs(ctx context.Context, uid uuid.UUID) ([]*model.URL, error)
-	DeleteUserURLs(ctx context.Context, uid uuid.UUID, urls []*model.URL) error
+	DeleteURLs(ctx context.Context, urls []*model.URL) error
 	Close() error
 }

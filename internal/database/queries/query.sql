@@ -18,3 +18,9 @@ SELECT *
 FROM urls
 WHERE uid = $1
   AND is_deleted = FALSE;
+
+-- name: DeleteURL :exec
+UPDATE urls
+SET is_deleted = TRUE
+WHERE url_id = $1
+  AND uid = $2 RETURNING *;

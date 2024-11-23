@@ -24,6 +24,9 @@ func New(db DBTX) *Queries {
 func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	q := Queries{db: db}
 	var err error
+	if q.deleteURLStmt, err = db.PrepareContext(ctx, deleteURL); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteURL: %w", err)
+	}
 	if q.getURLStmt, err = db.PrepareContext(ctx, getURL); err != nil {
 		return nil, fmt.Errorf("error preparing query GetURL: %w", err)
 	}
@@ -41,6 +44,11 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 
 func (q *Queries) Close() error {
 	var err error
+	if q.deleteURLStmt != nil {
+		if cerr := q.deleteURLStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteURLStmt: %w", cerr)
+		}
+	}
 	if q.getURLStmt != nil {
 		if cerr := q.getURLStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getURLStmt: %w", cerr)
@@ -100,6 +108,7 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 type Queries struct {
 	db               DBTX
 	tx               *sql.Tx
+	deleteURLStmt    *sql.Stmt
 	getURLStmt       *sql.Stmt
 	getURLByLongStmt *sql.Stmt
 	getUserURLsStmt  *sql.Stmt
@@ -110,6 +119,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
 		db:               tx,
 		tx:               tx,
+		deleteURLStmt:    q.deleteURLStmt,
 		getURLStmt:       q.getURLStmt,
 		getURLByLongStmt: q.getURLByLongStmt,
 		getUserURLsStmt:  q.getUserURLsStmt,

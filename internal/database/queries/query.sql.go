@@ -11,6 +11,23 @@ import (
 	"github.com/google/uuid"
 )
 
+const deleteURL = `-- name: DeleteURL :exec
+UPDATE urls
+SET is_deleted = TRUE
+WHERE url_id = $1
+  AND uid = $2 RETURNING id, long_url, base_url, url_id, created_at, uid, is_deleted
+`
+
+type DeleteURLParams struct {
+	UrlID string
+	Uid   uuid.UUID
+}
+
+func (q *Queries) DeleteURL(ctx context.Context, arg DeleteURLParams) error {
+	_, err := q.exec(ctx, q.deleteURLStmt, deleteURL, arg.UrlID, arg.Uid)
+	return err
+}
+
 const getURL = `-- name: GetURL :one
 SELECT id, long_url, base_url, url_id, created_at, uid, is_deleted
 FROM urls

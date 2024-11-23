@@ -282,6 +282,12 @@ func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Если запросили помеченный на удаление URL, возвращаем статус 410
+	if url.Deleted {
+		w.WriteHeader(http.StatusGone)
+		return
+	}
+
 	// По идентификатору ничего не нашли
 	if len(url.Long) == 0 {
 		http.Error(w, "URL ID was not found in repository", http.StatusNotFound)
@@ -374,6 +380,7 @@ func (h *Handlers) UserUrlsDelete(w http.ResponseWriter, r *http.Request) {
 	urlArray, _ := io.ReadAll(r.Body)
 	defer func() { _ = r.Body.Close() }()
 
+	// Парсим JSON
 	var shortURLs []string
 	err = json.Unmarshal(urlArray, &shortURLs)
 	if err != nil {
@@ -390,6 +397,17 @@ func (h *Handlers) UserUrlsDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Устанавливаем пометки удаления
+	err = h.shortener.DeleteUserURLs(ctx, uid, &model.ShortURLsDTO{IDs: shortURLs})
+	if err != nil {
+		slog.Info(
+			"failed to delete user URLs",
+			"error", err.Error())
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
 }
 
 // getUserUid получает идентификатор пользователя из контекста запроса.

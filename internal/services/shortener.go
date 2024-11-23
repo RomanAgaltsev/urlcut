@@ -118,6 +118,7 @@ func (s *Shortener) Expand(ctx context.Context, id string) (*model.URL, error) {
 	return url, nil
 }
 
+// UserURLs возвращает слайс URL пользователя с переданным uid пользователя.
 func (s *Shortener) UserURLs(ctx context.Context, uid uuid.UUID) ([]model.UserURLDTO, error) {
 	urls, err := s.repository.GetUserURLs(ctx, uid)
 	if err != nil {
@@ -138,8 +139,20 @@ func (s *Shortener) UserURLs(ctx context.Context, uid uuid.UUID) ([]model.UserUR
 	return userURLs, nil
 }
 
-func (s *Shortener) DeleteUserURLs(ctx context.Context, shortURLs model.ShortURLsDTO) error {
-	return nil
+// DeleteUserURLs устанавливает пометку на удаление у всех URL с переданным uid пользователя и идентификаторами URL.
+func (s *Shortener) DeleteUserURLs(ctx context.Context, uid uuid.UUID, shortURLs *model.ShortURLsDTO) error {
+	// Создаем слайс URL для передачи в репозиторий
+	urls := make([]*model.URL, 0, len(shortURLs.IDs))
+
+	// Перекладываем идентификаторы и uid в слайс URL
+	for _, id := range shortURLs.IDs {
+		urls = append(urls, &model.URL{
+			ID:  id,
+			UID: uid,
+		})
+	}
+
+	return s.repository.DeleteURLs(ctx, urls)
 }
 
 // Close закрывает репозиторий ссылок сокращателя.

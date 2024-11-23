@@ -76,7 +76,15 @@ func (r *InMemoryRepository) GetUserURLs(_ context.Context, uid uuid.UUID) ([]*m
 	return urls, nil
 }
 
-func (r *InMemoryRepository) DeleteUserURLs(ctx context.Context, uid uuid.UUID, urls []*model.URL) error {
+func (r *InMemoryRepository) DeleteURLs(_ context.Context, urls []*model.URL) error {
+	// Перебираем URL в цикле и устанавливаем пометки удаления
+	for _, url := range urls {
+		u, ok := r.m[url.ID]
+		if ok && u.UID == url.UID {
+			u.Deleted = true
+		}
+	}
+
 	return nil
 }
 
