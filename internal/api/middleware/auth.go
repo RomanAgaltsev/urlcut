@@ -34,7 +34,7 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 				}
 			} else {
 				// Декодируем токен
-				token, err = ja.Decode(tokenString)
+				token, _ = ja.Decode(tokenString)
 				// Пробуем валидировать токен
 				if err = jwt.Validate(token, ja.ValidateOptions()...); err != nil {
 					// Валидировать токен не удалось, выдаем куку
