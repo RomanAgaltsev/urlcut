@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/mocks"
@@ -80,9 +81,6 @@ func TestShortener(t *testing.T) {
 		Return(nil).
 		Times(1)
 
-	err = shortener.Close()
-	require.NoError(t, err)
-
 	mockRepo.EXPECT().
 		Store(context.TODO(), gomock.Any()).
 		Return(nil, nil).
@@ -112,5 +110,10 @@ func TestShortener(t *testing.T) {
 	shortURLs := model.ShortURLsDTO{IDs: []string{urlID}}
 
 	err = shortener.DeleteUserURLs(context.TODO(), uid, &shortURLs)
+	require.NoError(t, err)
+
+	time.Sleep(11 * time.Second)
+
+	err = shortener.Close()
 	require.NoError(t, err)
 }
