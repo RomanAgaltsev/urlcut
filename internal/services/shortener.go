@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"time"
 
 	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
@@ -24,6 +26,8 @@ var ErrInitServiceFailed = fmt.Errorf("failed to init service")
 type Shortener struct {
 	repository interfaces.Repository // Репозиторий (интерфейс) для хранения URL
 	cfg        *config.Config        // Конфигурация приложения
+
+	urlDelChan chan *model.URL // Канал для сбора URL к отложенному удалению
 }
 
 // NewShortener создает новый сокращатель ссылок.
@@ -33,10 +37,16 @@ func NewShortener(repository interfaces.Repository, cfg *config.Config) (*Shorte
 		return nil, ErrInitServiceFailed
 	}
 
-	return &Shortener{
+	shortener := &Shortener{
 		repository: repository,
 		cfg:        cfg,
-	}, nil
+		urlDelChan: make(chan *model.URL, 1024),
+	}
+
+	// Запускаем горутину фоновой пометки на удаление URL
+	go shortener.deleteURLs()
+
+	return shortener, nil
 }
 
 // Shorten сокращает переданную ссылку.
@@ -141,21 +151,53 @@ func (s *Shortener) UserURLs(ctx context.Context, uid uuid.UUID) ([]model.UserUR
 
 // DeleteUserURLs устанавливает пометку на удаление у всех URL с переданным uid пользователя и идентификаторами URL.
 func (s *Shortener) DeleteUserURLs(ctx context.Context, uid uuid.UUID, shortURLs *model.ShortURLsDTO) error {
-	// Создаем слайс URL для передачи в репозиторий
-	urls := make([]*model.URL, 0, len(shortURLs.IDs))
-
 	// Перекладываем идентификаторы и uid в слайс URL
 	for _, id := range shortURLs.IDs {
-		urls = append(urls, &model.URL{
+		s.urlDelChan <- &model.URL{
 			ID:  id,
 			UID: uid,
-		})
+		}
 	}
+	
+	return nil
+}
 
-	return s.repository.DeleteURLs(ctx, urls)
+// deleteURLs устанавливаем пометку на удаление URL с определенным интервалом.
+func (s *Shortener) deleteURLs() {
+	// Сохраняем URL, накопленные за последние 10 секунд
+	ticker := time.NewTicker(10 * time.Second)
+
+	// Накапливаем URL к удалению в слайсе
+	var urls []*model.URL
+
+	for {
+		select {
+		// Пробуем получить URL из канала
+		case url := <-s.urlDelChan:
+			// Полученный URL добавляем в слайс
+			urls = append(urls, url)
+		case <-ticker.C:
+			// Очередной интервал прошел, проверяем наличие URL к удалению
+			if len(urls) == 0 {
+				// Нет ничего - продолжаем
+				continue
+			}
+			// Устанавливаем пометку на удаление для полученных URL
+			err := s.repository.DeleteURLs(context.TODO(), urls)
+			if err != nil {
+				slog.Info("failed to delete URLs", "error", err.Error())
+				continue
+			}
+			// Обнуляем слайс URL
+			urls = nil
+		}
+	}
 }
 
 // Close закрывает репозиторий ссылок сокращателя.
 func (s *Shortener) Close() error {
+	// Закрываем канал сбора URL к удалению
+	close(s.urlDelChan)
+	// Закрываем соединения
 	return s.repository.Close()
 }
