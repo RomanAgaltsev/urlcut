@@ -219,5 +219,9 @@ func (r *DBRepository) DeleteURLs(ctx context.Context, urls []*model.URL) error 
 
 // Close закрывает соединение с БД.
 func (r *DBRepository) Close() error {
+	err := r.q.Close()
+	if err != nil {
+		return err
+	}
 	return r.db.Close()
 }

@@ -42,6 +42,11 @@ func TestDBRepository(t *testing.T) {
 	rowsSel := sqlmock.NewRows([]string{"id", "long_url", "base_url", "url_id", "created_at", "uid", "is_deleted"}).
 		AddRow(1, longURL, BaseURL, urlID, time.Now(), uid, false)
 
+	mock.ExpectPrepare("(.*)UPDATE(.*)")
+	mock.ExpectPrepare("(.*)SELECT(.*)")
+	mock.ExpectPrepare("(.*)SELECT(.*)")
+	mock.ExpectPrepare("(.*)SELECT(.*)")
+	mock.ExpectPrepare("(.*)INSERT(.*)")
 	mock.ExpectBegin()
 	mock.ExpectQuery("(.*)INSERT(.*)").
 		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
