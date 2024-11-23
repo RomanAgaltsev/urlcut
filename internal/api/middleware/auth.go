@@ -13,39 +13,41 @@ import (
 func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
+			var tokenString string
+			var token jwt.Token
+			var err error
+
 			// Пробуем получить токен из куки
-			tokenString := jwtauth.TokenFromCookie(r)
+			tokenString = jwtauth.TokenFromCookie(r)
 			if tokenString == "" {
 				// Пробуем получить токен из заголовка Authorization
 				tokenString = r.Header.Get("Authorization")
 			}
 
-			// Декодируем токен
-			token, err := ja.Decode(tokenString)
-
-			// Проверяем, удалось ли получить токен
-			if err != nil || token == nil {
-				// Получить токен не удалось, выдаем куку
+			// Проверяем, удалось ли получить строку токена
+			if tokenString == "" {
+				// Получить строку токена не удалось, создаем новую
 				token, tokenString, err = auth.NewJWTToken(ja)
 				if err != nil {
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
-				http.SetCookie(w, auth.NewCookieWithDefaults(tokenString))
-				w.Header().Set("Authorization", tokenString)
+			} else {
+				// Декодируем токен
+				token, err = ja.Decode(tokenString)
+				// Пробуем валидировать токен
+				if err = jwt.Validate(token, ja.ValidateOptions()...); err != nil {
+					// Валидировать токен не удалось, выдаем куку
+					token, tokenString, err = auth.NewJWTToken(ja)
+					if err != nil {
+						http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+						return
+					}
+				}
 			}
 
-			// Пробуем валидировать токен
-			if err = jwt.Validate(token, ja.ValidateOptions()...); err != nil {
-				// Валидировать токен не удалось, выдаем куку
-				token, tokenString, err = auth.NewJWTToken(ja)
-				if err != nil {
-					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-					return
-				}
-				http.SetCookie(w, auth.NewCookieWithDefaults(tokenString))
-				w.Header().Set("Authorization", tokenString)
-			}
+			http.SetCookie(w, auth.NewCookieWithDefaults(tokenString))
+			w.Header().Set("Authorization", tokenString)
 
 			// Валидацию прошли, получим утверждения
 			claims := token.PrivateClaims()

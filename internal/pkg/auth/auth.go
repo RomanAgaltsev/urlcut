@@ -18,10 +18,7 @@ const (
 	DefaultCookiePath = "/"
 
 	// DefaultCookieMaxAge содержит возраст куки по умолчанию.
-	DefaultCookieMaxAge = 0
-
-	// DefaultCookieSecure содержит признак защищенной куки по умолчанию.
-	DefaultCookieSecure = true
+	DefaultCookieMaxAge = 3600
 
 	// UserIDClaimName содержит имя ключа идентификатора пользователя в контексте.
 	UserIDClaimName UserIDKey = "uid"
@@ -34,10 +31,10 @@ func NewJWTToken(ja *jwtauth.JWTAuth) (token jwt.Token, tokenString string, err 
 // NewCookieWithDefaults создает новую куку со значениями по умолчанию и переданным в параметре значением.
 func NewCookieWithDefaults(value string) *http.Cookie {
 	return &http.Cookie{
-		Name:   DefaultCookieName,
-		Value:  value,
-		Path:   DefaultCookiePath,
-		MaxAge: DefaultCookieMaxAge,
-		Secure: DefaultCookieSecure,
+		Name:     DefaultCookieName,
+		Value:    value,
+		Path:     DefaultCookiePath,
+		MaxAge:   DefaultCookieMaxAge,
+		SameSite: http.SameSiteDefaultMode,
 	}
 }
