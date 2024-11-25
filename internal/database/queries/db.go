@@ -24,11 +24,17 @@ func New(db DBTX) *Queries {
 func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	q := Queries{db: db}
 	var err error
+	if q.deleteURLStmt, err = db.PrepareContext(ctx, deleteURL); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteURL: %w", err)
+	}
 	if q.getURLStmt, err = db.PrepareContext(ctx, getURL); err != nil {
 		return nil, fmt.Errorf("error preparing query GetURL: %w", err)
 	}
 	if q.getURLByLongStmt, err = db.PrepareContext(ctx, getURLByLong); err != nil {
 		return nil, fmt.Errorf("error preparing query GetURLByLong: %w", err)
+	}
+	if q.getUserURLsStmt, err = db.PrepareContext(ctx, getUserURLs); err != nil {
+		return nil, fmt.Errorf("error preparing query GetUserURLs: %w", err)
 	}
 	if q.storeURLStmt, err = db.PrepareContext(ctx, storeURL); err != nil {
 		return nil, fmt.Errorf("error preparing query StoreURL: %w", err)
@@ -38,6 +44,11 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 
 func (q *Queries) Close() error {
 	var err error
+	if q.deleteURLStmt != nil {
+		if cerr := q.deleteURLStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteURLStmt: %w", cerr)
+		}
+	}
 	if q.getURLStmt != nil {
 		if cerr := q.getURLStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getURLStmt: %w", cerr)
@@ -46,6 +57,11 @@ func (q *Queries) Close() error {
 	if q.getURLByLongStmt != nil {
 		if cerr := q.getURLByLongStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getURLByLongStmt: %w", cerr)
+		}
+	}
+	if q.getUserURLsStmt != nil {
+		if cerr := q.getUserURLsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getUserURLsStmt: %w", cerr)
 		}
 	}
 	if q.storeURLStmt != nil {
@@ -92,8 +108,10 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 type Queries struct {
 	db               DBTX
 	tx               *sql.Tx
+	deleteURLStmt    *sql.Stmt
 	getURLStmt       *sql.Stmt
 	getURLByLongStmt *sql.Stmt
+	getUserURLsStmt  *sql.Stmt
 	storeURLStmt     *sql.Stmt
 }
 
@@ -101,8 +119,10 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
 		db:               tx,
 		tx:               tx,
+		deleteURLStmt:    q.deleteURLStmt,
 		getURLStmt:       q.getURLStmt,
 		getURLByLongStmt: q.getURLByLongStmt,
+		getUserURLsStmt:  q.getUserURLsStmt,
 		storeURLStmt:     q.storeURLStmt,
 	}
 }

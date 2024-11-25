@@ -2,73 +2,88 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/RomanAgaltsev/urlcut/internal/model"
-	"github.com/RomanAgaltsev/urlcut/internal/repository/queries"
+	"github.com/RomanAgaltsev/urlcut/internal/pkg/random"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestDBRepository(t *testing.T) {
 	const (
-		longURL = "https://app.pachca.com"
 		BaseURL = "http://localhost:8080"
-		urlID   = "1q2w3e4r"
 	)
+	longURL := fmt.Sprintf("https://%s.%s", random.String(20), random.String(3))
+	urlID := random.String(8)
+
+	uid, _ := uuid.NewRandom()
 
 	urlS := &model.URL{
 		Long:   longURL,
 		Base:   BaseURL,
 		ID:     urlID,
 		CorrID: "",
+		UID:    uid,
 	}
-
-	var dbRepository *DBRepository
 
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer func() { _ = db.Close() }()
 
-	rowsIns := sqlmock.NewRows([]string{"id", "long_url", "base_url", "url_id", "created_at"}).
-		AddRow(1, longURL, BaseURL, urlID, time.Now())
-	rowsSel := sqlmock.NewRows([]string{"id", "long_url", "base_url", "url_id", "created_at"}).
-		AddRow(1, longURL, BaseURL, urlID, time.Now())
+	rowsIns := sqlmock.NewRows([]string{"id", "long_url", "base_url", "url_id", "created_at", "uid", "is_deleted"}).
+		AddRow(1, longURL, BaseURL, urlID, time.Now(), uid, false)
+	rowsSel := sqlmock.NewRows([]string{"id", "long_url", "base_url", "url_id", "created_at", "uid", "is_deleted"}).
+		AddRow(1, longURL, BaseURL, urlID, time.Now(), uid, false)
 
+	mock.ExpectPrepare("(.*)UPDATE(.*)")
+	mock.ExpectPrepare("(.*)SELECT(.*)")
+	mock.ExpectPrepare("(.*)SELECT(.*)")
+	mock.ExpectPrepare("(.*)SELECT(.*)")
+	mock.ExpectPrepare("(.*)INSERT(.*)")
 	mock.ExpectBegin()
 	mock.ExpectQuery("(.*)INSERT(.*)").
-		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(rowsIns)
 	mock.ExpectCommit()
 	mock.ExpectQuery("(.*)SELECT(.*)").
 		WithArgs(sqlmock.AnyArg()).
 		WillReturnRows(rowsSel)
+	mock.ExpectQuery("(.*)SELECT(.*)").
+		WithArgs(sqlmock.AnyArg()).
+		WillReturnRows(rowsSel)
+	mock.ExpectBegin()
+	mock.ExpectExec("(.*)UPDATE(.*)").
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
 	mock.ExpectClose()
 
-	var q *queries.Queries
-
-	q, err = queries.Prepare(context.Background(), db)
-	if err != nil {
-		q = queries.New(db)
-	}
-
-	dbRepository = &DBRepository{
-		db: db,
-		q:  q,
-	}
-
-	_, err = dbRepository.Store([]*model.URL{urlS})
+	dbRepository, err := NewDBRepository(db)
 	require.NoError(t, err)
 
-	urlG, err := dbRepository.Get(urlID)
+	storedURLs, err := dbRepository.Store(context.TODO(), []*model.URL{urlS})
+	require.NoError(t, err)
+	assert.IsType(t, urlS, storedURLs)
+
+	urlG, err := dbRepository.Get(context.TODO(), urlID)
 	require.NoError(t, err)
 
-	assert.Equal(t, urlS, urlG)
+	assert.Equal(t, urlS.Long, urlG.Long)
+	assert.Equal(t, urlS.Base, urlG.Base)
+	assert.Equal(t, urlS.ID, urlG.ID)
+	assert.Equal(t, urlS.CorrID, urlG.CorrID)
 
-	err = dbRepository.Check()
+	userURLs, err := dbRepository.GetUserURLs(context.TODO(), uid)
+	require.NoError(t, err)
+	assert.IsType(t, []*model.URL{urlS}, userURLs)
+
+	err = dbRepository.DeleteURLs(context.TODO(), []*model.URL{urlS})
 	require.NoError(t, err)
 
 	err = dbRepository.Close()

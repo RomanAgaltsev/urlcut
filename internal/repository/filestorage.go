@@ -15,6 +15,7 @@ func readFromFile(fileStoragePath string) (map[string]*model.URL, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer func() { _ = file.Close() }()
 
 	// Создаем мапу
 	m := make(map[string]*model.URL)
@@ -28,11 +29,6 @@ func readFromFile(fileStoragePath string) (map[string]*model.URL, error) {
 			return nil, err
 		}
 		m[u.ID] = &u
-	}
-
-	// Закрываем файл
-	if err := file.Close(); err != nil {
-		return nil, err
 	}
 
 	// Возвращаем мапу

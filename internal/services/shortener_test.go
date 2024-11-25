@@ -1,11 +1,15 @@
 package services
 
 import (
+	"context"
 	"testing"
+	"time"
 
+	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/mocks"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -13,11 +17,23 @@ import (
 
 func TestShortener(t *testing.T) {
 	const (
-		baseURL  = "http://localhost:8080"
-		longURL  = "https://practicum.yandex.ru/"
-		urlID    = "h7Ds18sD"
-		idLength = 8
+		serverPort = "localhost:8080"
+		baseURL    = "http://localhost:8080"
+		longURL    = "https://practicum.yandex.ru/"
+		urlID      = "h7Ds18sD"
+		idLength   = 8
 	)
+
+	uid := uuid.New()
+
+	cfg := &config.Config{
+		ServerPort:      serverPort,
+		BaseURL:         baseURL,
+		FileStoragePath: "",
+		DatabaseDSN:     "",
+		IDlength:        idLength,
+	}
+
 	url := &model.URL{
 		Long: longURL,
 		Base: baseURL,
@@ -29,15 +45,15 @@ func TestShortener(t *testing.T) {
 
 	mockRepo := mocks.NewMockRepository(ctrl)
 
+	shortener, err := NewShortener(mockRepo, cfg)
+	require.NoError(t, err)
+
 	mockRepo.EXPECT().
-		Store(gomock.Any()).
+		Store(context.TODO(), gomock.Any()).
 		Return(nil, nil).
 		Times(1)
 
-	shortener, err := NewShortener(mockRepo, baseURL, idLength)
-	require.NoError(t, err)
-
-	urlS, err := shortener.Shorten(longURL)
+	urlS, err := shortener.Shorten(context.TODO(), longURL, uid)
 	require.NoError(t, err)
 	assert.Equal(t, url.Long, urlS.Long)
 	assert.Equal(t, url.Base, urlS.Base)
@@ -46,32 +62,57 @@ func TestShortener(t *testing.T) {
 
 	mockRepo.
 		EXPECT().
-		Get(urlS.ID).
+		Get(context.TODO(), urlS.ID).
 		Return(&model.URL{
 			Long: urlS.Long,
 			Base: urlS.Base,
 			ID:   urlS.ID,
+			UID:  uid,
 		}, nil).
 		Times(1)
 
-	urlE, err := shortener.Expand(urlS.ID)
+	urlE, err := shortener.Expand(context.TODO(), urlS.ID)
 	require.NoError(t, err)
 	assert.Equal(t, urlS, urlE)
-
-	mockRepo.
-		EXPECT().
-		Check().
-		Return(nil).
-		Times(1)
-
-	err = shortener.Check()
-	require.NoError(t, err)
 
 	mockRepo.
 		EXPECT().
 		Close().
 		Return(nil).
 		Times(1)
+
+	mockRepo.EXPECT().
+		Store(context.TODO(), gomock.Any()).
+		Return(nil, nil).
+		Times(1)
+
+	inBatch := []model.IncomingBatchDTO{
+		{CorrelationID: urlID, OriginalURL: longURL},
+	}
+
+	outBatch, err := shortener.ShortenBatch(context.TODO(), inBatch, uid)
+	require.NoError(t, err)
+	assert.Equal(t, len(inBatch), len(outBatch))
+
+	mockRepo.EXPECT().
+		GetUserURLs(context.TODO(), gomock.Any()).
+		Return(nil, nil).
+		Times(1)
+
+	_, err = shortener.UserURLs(context.TODO(), uid)
+	require.NoError(t, err)
+
+	mockRepo.EXPECT().
+		DeleteURLs(context.TODO(), gomock.Any()).
+		Return(nil).
+		Times(1)
+
+	shortURLs := model.ShortURLsDTO{IDs: []string{urlID}}
+
+	err = shortener.DeleteUserURLs(context.TODO(), uid, &shortURLs)
+	require.NoError(t, err)
+
+	time.Sleep(11 * time.Second)
 
 	err = shortener.Close()
 	require.NoError(t, err)

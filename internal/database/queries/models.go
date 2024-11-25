@@ -6,6 +6,8 @@ package queries
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Url struct {
@@ -14,4 +16,6 @@ type Url struct {
 	BaseUrl   string
 	UrlID     string
 	CreatedAt time.Time
+	Uid       uuid.UUID
+	IsDeleted bool
 }

@@ -10,9 +10,11 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	model "github.com/RomanAgaltsev/urlcut/internal/model"
+	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -40,20 +42,6 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
 }
 
-// Check mocks base method.
-func (m *MockRepository) Check() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Check")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Check indicates an expected call of Check.
-func (mr *MockRepositoryMockRecorder) Check() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Check", reflect.TypeOf((*MockRepository)(nil).Check))
-}
-
 // Close mocks base method.
 func (m *MockRepository) Close() error {
 	m.ctrl.T.Helper()
@@ -68,32 +56,61 @@ func (mr *MockRepositoryMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockRepository)(nil).Close))
 }
 
-// Get mocks base method.
-func (m *MockRepository) Get(id string) (*model.URL, error) {
+// DeleteURLs mocks base method.
+func (m *MockRepository) DeleteURLs(ctx context.Context, urls []*model.URL) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", id)
+	ret := m.ctrl.Call(m, "DeleteURLs", ctx, urls)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteURLs indicates an expected call of DeleteURLs.
+func (mr *MockRepositoryMockRecorder) DeleteURLs(ctx, urls any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteURLs", reflect.TypeOf((*MockRepository)(nil).DeleteURLs), ctx, urls)
+}
+
+// Get mocks base method.
+func (m *MockRepository) Get(ctx context.Context, id string) (*model.URL, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, id)
 	ret0, _ := ret[0].(*model.URL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockRepositoryMockRecorder) Get(id any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepository)(nil).Get), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepository)(nil).Get), ctx, id)
+}
+
+// GetUserURLs mocks base method.
+func (m *MockRepository) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]*model.URL, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserURLs", ctx, uid)
+	ret0, _ := ret[0].([]*model.URL)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserURLs indicates an expected call of GetUserURLs.
+func (mr *MockRepositoryMockRecorder) GetUserURLs(ctx, uid any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserURLs", reflect.TypeOf((*MockRepository)(nil).GetUserURLs), ctx, uid)
 }
 
 // Store mocks base method.
-func (m *MockRepository) Store(urls []*model.URL) (*model.URL, error) {
+func (m *MockRepository) Store(ctx context.Context, urls []*model.URL) (*model.URL, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Store", urls)
+	ret := m.ctrl.Call(m, "Store", ctx, urls)
 	ret0, _ := ret[0].(*model.URL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Store indicates an expected call of Store.
-func (mr *MockRepositoryMockRecorder) Store(urls any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Store(ctx, urls any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockRepository)(nil).Store), urls)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockRepository)(nil).Store), ctx, urls)
 }

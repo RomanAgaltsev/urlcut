@@ -1,11 +1,14 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
+
+	"github.com/google/uuid"
 )
 
 // Неиспользуемая переменная для проверки реализации интерфейса хранилища in memory репозиторием
@@ -36,7 +39,7 @@ func NewInMemoryRepository(fileStoragePath string) *InMemoryRepository {
 }
 
 // Store сохраняет данные URL в in memory репозитории.
-func (r *InMemoryRepository) Store(urls []*model.URL) (*model.URL, error) {
+func (r *InMemoryRepository) Store(_ context.Context, urls []*model.URL) (*model.URL, error) {
 	r.Lock()
 	defer r.Unlock()
 
@@ -48,7 +51,7 @@ func (r *InMemoryRepository) Store(urls []*model.URL) (*model.URL, error) {
 }
 
 // Get возвращает данные URL из in memory репозитория.
-func (r *InMemoryRepository) Get(id string) (*model.URL, error) {
+func (r *InMemoryRepository) Get(_ context.Context, id string) (*model.URL, error) {
 	r.Lock()
 	defer r.Unlock()
 
@@ -59,15 +62,33 @@ func (r *InMemoryRepository) Get(id string) (*model.URL, error) {
 	}
 }
 
+func (r *InMemoryRepository) GetUserURLs(_ context.Context, uid uuid.UUID) ([]*model.URL, error) {
+	// Создаем слайс для возврата ссылок пользователя
+	urls := make([]*model.URL, 0)
+
+	// Отбираем URL пользователя простым перебором
+	for _, url := range r.m {
+		if url.UID == uid {
+			urls = append(urls, url)
+		}
+	}
+
+	return urls, nil
+}
+
+func (r *InMemoryRepository) DeleteURLs(_ context.Context, urls []*model.URL) error {
+	// Перебираем URL в цикле и устанавливаем пометки удаления
+	for _, url := range urls {
+		u, ok := r.m[url.ID]
+		if ok && u.UID == url.UID {
+			u.Deleted = true
+		}
+	}
+
+	return nil
+}
+
 // Close сохраняет данные из in memory репозитория в файловое хранилище.
 func (r *InMemoryRepository) Close() error {
 	return writeToFile(r.f, r.m)
-}
-
-// Check проверяет доступность in memory репозитория.
-func (r *InMemoryRepository) Check() error {
-	if r.m == nil {
-		return ErrStorageUnavailable
-	}
-	return nil
 }
