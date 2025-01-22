@@ -19,7 +19,7 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 			var err error
 
 			// Пробуем получить токен из куки
-			tokenString = jwtauth.TokenFromCookie(r)
+			tokenString = tokenFromCookie(r)
 			if tokenString == "" {
 				// Пробуем получить токен из заголовка Authorization
 				tokenString = r.Header.Get("Authorization")
@@ -66,7 +66,7 @@ func WithID(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			// Пробуем получить токен из куки
-			tokenString := jwtauth.TokenFromCookie(r)
+			tokenString := tokenFromCookie(r)
 			if tokenString == "" {
 				// Пробуем получить токен из заголовка Authorization
 				tokenString = r.Header.Get("Authorization")
@@ -110,4 +110,13 @@ func WithID(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 		}
 		return http.HandlerFunc(fn)
 	}
+}
+
+func tokenFromCookie(r *http.Request) string {
+	for _, cookie := range r.Cookies() {
+		if cookie.Name == "jwt" {
+			return cookie.Value
+		}
+	}
+	return ""
 }
