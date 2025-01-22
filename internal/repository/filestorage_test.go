@@ -6,10 +6,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/RomanAgaltsev/urlcut/internal/model"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/RomanAgaltsev/urlcut/internal/model"
 )
 
 func TestFileStorage(t *testing.T) {

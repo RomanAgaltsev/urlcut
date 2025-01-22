@@ -5,15 +5,15 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/RomanAgaltsev/urlcut/internal/database/queries"
-	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
-	"github.com/RomanAgaltsev/urlcut/internal/model"
-
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"github.com/RomanAgaltsev/urlcut/internal/database/queries"
+	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
+	"github.com/RomanAgaltsev/urlcut/internal/model"
 )
 
 // Неиспользуемая переменная для проверки реализации интерфейса хранилища БД репозиторием

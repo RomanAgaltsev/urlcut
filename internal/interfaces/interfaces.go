@@ -3,9 +3,9 @@ package interfaces
 import (
 	"context"
 
-	"github.com/RomanAgaltsev/urlcut/internal/model"
-
 	"github.com/google/uuid"
+
+	"github.com/RomanAgaltsev/urlcut/internal/model"
 )
 
 // Service интерфейс сервиса сокращения URL.

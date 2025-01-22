@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/RomanAgaltsev/urlcut/internal/pkg/auth"
-
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/lestrrat-go/jwx/v2/jwt"
+
+	"github.com/RomanAgaltsev/urlcut/internal/pkg/auth"
 )
 
 func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {

@@ -13,9 +13,10 @@ import (
 	context "context"
 	reflect "reflect"
 
-	model "github.com/RomanAgaltsev/urlcut/internal/model"
 	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
+
+	model "github.com/RomanAgaltsev/urlcut/internal/model"
 )
 
 // MockRepository is a mock of Repository interface.

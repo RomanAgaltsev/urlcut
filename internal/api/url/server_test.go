@@ -3,10 +3,10 @@ package url
 import (
 	"testing"
 
-	"github.com/RomanAgaltsev/urlcut/internal/config"
-	
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/RomanAgaltsev/urlcut/internal/config"
 )
 
 func TestServer(t *testing.T) {

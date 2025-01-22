@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/RomanAgaltsev/urlcut/migrations"
-
 	"github.com/pressly/goose/v3"
+
+	"github.com/RomanAgaltsev/urlcut/migrations"
 )
 
 func NewConnection(ctx context.Context, driver string, databaseDSN string) (*sql.DB, error) {
@@ -58,7 +58,7 @@ func Migrate(ctx context.Context, databaseDSN string) {
 	// Устанавливаем папку с файлами миграции
 	goose.SetBaseFS(migrations.Migrations)
 
-	// Накатываем миграции 
+	// Накатываем миграции
 	if err = goose.UpContext(ctx, db, "."); err != nil {
 		slog.Error("goose: failed to run migrations", slog.String("error", err.Error()))
 	}

@@ -9,15 +9,15 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+
 	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/database"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
 	"github.com/RomanAgaltsev/urlcut/internal/pkg/auth"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 )
 
 const (

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/google/uuid"
+
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
-
-	"github.com/google/uuid"
 )
 
 // Неиспользуемая переменная для проверки реализации интерфейса хранилища in memory репозиторием
