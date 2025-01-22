@@ -17,6 +17,11 @@ func TestString(t *testing.T) {
 	assert.Len(t, randomString, stringLenght)
 	assert.True(t, strings.ContainsAny(randomString, Letters))
 	assert.False(t, strings.ContainsAny(randomString, badLetters))
-	//	assert.Contains(t, Letters, randomString)
-	//	assert.NotContains(t, badLetters, randomString)
+}
+
+func BenchmarkString(b *testing.B) {
+	const lenght = 8
+	for range b.N {
+		_ = String(lenght)
+	}
 }
