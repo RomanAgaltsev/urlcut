@@ -154,6 +154,7 @@ func (r *DBRepository) Get(ctx context.Context, id string) (*model.URL, error) {
 	}, nil
 }
 
+// GetUserURLs возвращает из БД хранилища URL пользователя по переданному идентификатору.
 func (r *DBRepository) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]*model.URL, error) {
 	// Получаем из БД URL по идентификатору пользователя при помощи retry операции
 	urlsQuery, err := backoff.RetryWithData(func() ([]queries.Url, error) {
@@ -187,6 +188,7 @@ func (r *DBRepository) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]*model
 	return urls, nil
 }
 
+// DeleteURLs удаляет в БД хранилище переданные URL.
 func (r *DBRepository) DeleteURLs(ctx context.Context, urls []*model.URL) error {
 	// Начинаем транзакцию
 	tx, err := r.db.Begin()

@@ -2,6 +2,7 @@ package random
 
 import "math/rand"
 
+// Letters содержит символы, используемые при формировании идентификатора сокращенного URL.
 const Letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 // String формирует последовательность английских больших, маленьких букв и цифр заданной длины.

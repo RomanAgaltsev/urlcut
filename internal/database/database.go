@@ -11,6 +11,11 @@ import (
 	"github.com/RomanAgaltsev/urlcut/migrations"
 )
 
+// NewConnection создает новое соединение с базой данных.
+// Выполняются следующие действия:
+//  - открывается соединение с БД с установкой параметров соединения
+//  - выполняется пинг БД
+//  - запускаются миграции
 func NewConnection(ctx context.Context, driver string, databaseDSN string) (*sql.DB, error) {
 	// Открываем соединение
 	db, err := sql.Open(driver, databaseDSN)
@@ -37,6 +42,7 @@ func NewConnection(ctx context.Context, driver string, databaseDSN string) (*sql
 	return db, err
 }
 
+// Migrate выполняет миграции базы данных.
 func Migrate(ctx context.Context, databaseDSN string) {
 	// Тут открываем своё соединение
 	db, err := goose.OpenDBWithDriver("pgx", databaseDSN)

@@ -11,10 +11,14 @@ import (
 )
 
 var (
+	// ErrInitRepositoryFailed ошибка инициации репозитория.
 	ErrInitRepositoryFailed = fmt.Errorf("failed to init repository")
-	ErrConflict             = fmt.Errorf("data conflict")
+
+	// ErrConflict ошибка конфликта данных в БД.
+	ErrConflict = fmt.Errorf("data conflict")
 )
 
+// New создает и возвращает новый репозиторий в соответствии с переданной конфигурацией приложения.
 func New(cfg *config.Config) (interfaces.Repository, error) {
 	if cfg.DatabaseDSN == "" {
 		return NewInMemoryRepository(cfg.FileStoragePath), nil

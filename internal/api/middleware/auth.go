@@ -10,6 +10,10 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/pkg/auth"
 )
 
+// WithAuth возвращает хендлер, обернутый в миддлваре авторизации.
+// Сначала выполняется поиск JWT токена с именем "jwt" в куки запроса.
+// Далее, если токен в куки не найден, выполняется получение токена из заголовка "Authorization".
+// Если токен не был найден, генерируется новый и в заголовки ответа добавляется кука с ним.
 func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
@@ -62,6 +66,8 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 	}
 }
 
+// WithID работает аналогично WithAuth, но, при отсутствии токена в куке или заголовке, не выдает новый,
+// а возвращает статус Unauthorized - отказывает в авторизации запроса.
 func WithID(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {

@@ -8,6 +8,7 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
+// UserIDKey используется для получения идентификатора пользователя из клеймов JWT-токена.
 type UserIDKey string
 
 const (

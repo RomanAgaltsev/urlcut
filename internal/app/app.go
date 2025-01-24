@@ -19,12 +19,17 @@ import (
 
 // App является структурой всего приложения.
 type App struct {
-	cfg       *config.Config
-	server    *http.Server
-	shortener interfaces.Service
+	cfg       *config.Config     // конфигурация приложения
+	server    *http.Server       // http-сервер
+	shortener interfaces.Service // сервис сокращателя ссылок
 }
 
 // New создает новое приложение.
+// При создании приложения инициализируются:
+// - конфигурация
+// - логер
+// - сервис сокращателя ссылок
+// - http-сервер
 func New() (*App, error) {
 	app := &App{}
 
