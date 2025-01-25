@@ -14,6 +14,7 @@ import (
 // Неиспользуемая переменная для проверки реализации интерфейса хранилища in memory репозиторием.
 var _ interfaces.Repository = (*InMemoryRepository)(nil)
 
+// Переменные ошибок.
 var (
 	// ErrIDNotFound ошибка отсутствия URL в хранилище.
 	ErrIDNotFound = fmt.Errorf("URL ID was not found in repository")

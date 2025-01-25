@@ -10,6 +10,7 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 )
 
+// Переменные ошибок.
 var (
 	// ErrInitRepositoryFailed ошибка инициации репозитория.
 	ErrInitRepositoryFailed = fmt.Errorf("failed to init repository")

@@ -21,6 +21,7 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
 )
 
+// Служебные константы для заголовков.
 const (
 	// ContentTypeJSON используется для установки значений заголовков http-ответов.
 	ContentTypeJSON = "application/json"

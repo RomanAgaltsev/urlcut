@@ -12,6 +12,7 @@ import (
 // UserIDKey используется для получения идентификатора пользователя из клеймов JWT-токена.
 type UserIDKey string
 
+// Параметры куки по умолчанию.
 const (
 	// DefaultCookieName содержит имя куки по умолчанию.
 	DefaultCookieName = "jwt"

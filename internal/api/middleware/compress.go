@@ -24,10 +24,12 @@ func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 	}, nil
 }
 
+// Read читает сжатые данные.
 func (c *compressReader) Read(p []byte) (n int, err error) {
 	return c.gzreader.Read(p)
 }
 
+// Close закрывает чтение.
 func (c *compressReader) Close() error {
 	if err := c.reader.Close(); err != nil {
 		return err
