@@ -1,3 +1,4 @@
+// Пакет repository реализует in memory и database репозитории для сервиса сокращателя ссылок.
 package repository
 
 import (

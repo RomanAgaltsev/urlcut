@@ -1,3 +1,4 @@
+// Пакет middleware реализует миддлваре для хендлеров запросов. 
 package middleware
 
 import (

@@ -1,3 +1,4 @@
+// Пакет main - главный пакет приложения.
 package main
 
 import (

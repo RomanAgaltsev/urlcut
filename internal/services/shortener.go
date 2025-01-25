@@ -1,3 +1,4 @@
+// Пакет services реализует сервис сокращения URL.
 package services
 
 import (

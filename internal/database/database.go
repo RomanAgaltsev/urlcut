@@ -1,3 +1,4 @@
+// Пакет database реализует функционал соединения с БД и миграции.
 package database
 
 import (

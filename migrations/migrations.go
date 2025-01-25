@@ -1,3 +1,4 @@
+// Пакет migrations отвечает за миграции БД.
 package migrations
 
 import "embed"

@@ -1,3 +1,4 @@
+// Пакет interfaces хранит интерфейсы сервиса и репозитория сокращателя URL.
 package interfaces
 
 import (

@@ -1,3 +1,4 @@
+// Пакет config формирует конфигурацию приложения.
 package config
 
 import (
