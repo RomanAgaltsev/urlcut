@@ -5,7 +5,7 @@ go 1.22.7
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/go-chi/chi/v5 v5.1.0
+	github.com/go-chi/chi/v5 v5.2.0
 	github.com/go-chi/jwtauth/v5 v5.3.1
 	github.com/go-resty/resty/v2 v2.15.3
 	github.com/google/uuid v1.6.0
