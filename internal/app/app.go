@@ -1,3 +1,4 @@
+// Пакет app обеспечивает создание и запуск всего приложения.
 package app
 
 import (
@@ -19,12 +20,17 @@ import (
 
 // App является структурой всего приложения.
 type App struct {
-	cfg       *config.Config
-	server    *http.Server
-	shortener interfaces.Service
+	cfg       *config.Config     // конфигурация приложения
+	server    *http.Server       // http-сервер
+	shortener interfaces.Service // сервис сокращателя ссылок
 }
 
 // New создает новое приложение.
+// При создании приложения инициализируются:
+// - конфигурация
+// - логер
+// - сервис сокращателя ссылок
+// - http-сервер
 func New() (*App, error) {
 	app := &App{}
 
@@ -128,26 +134,22 @@ func (a *App) runShortenerApp() error {
 
 		// Выключаем HTTP сервер
 		if err := a.server.Shutdown(ctx); err != nil {
-			slog.Error("HTTP server shutdown error", slog.String("error", err.Error()),
-			)
+			slog.Error("HTTP server shutdown error", slog.String("error", err.Error()))
 		}
 
 		// Выключаем сервис сокращателя, включая закрытие хранилища
 		if err := a.shortener.Close(); err != nil {
-			slog.Error("failed to close shortener service", slog.String("error", err.Error()),
-			)
+			slog.Error("failed to close shortener service", slog.String("error", err.Error()))
 		}
 
 		close(done)
 	}()
 
-	slog.Info("starting HTTP server", "addr", a.server.Addr,
-	)
+	slog.Info("starting HTTP server", "addr", a.server.Addr)
 
 	// Запускаем HTTP сервер
 	if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		slog.Error("HTTP server error", slog.String("error", err.Error()),
-		)
+		slog.Error("HTTP server error", slog.String("error", err.Error()))
 		return err
 	}
 

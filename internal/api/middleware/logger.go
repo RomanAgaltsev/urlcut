@@ -16,6 +16,7 @@ type loggingResponseWriter struct {
 	responseData *responseData
 }
 
+// Write записывает данные в ответ на запрос и логирует их размер.
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
 	r.responseData.size += size
@@ -23,12 +24,14 @@ func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	return size, err
 }
 
+// WriteHeader записывает заголовок в ответ на запрос и логирует статус.
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.ResponseWriter.WriteHeader(statusCode)
 	r.responseData.status = statusCode
 }
 
-// WithLogging выполняет роль миддлваре логирования запросов
+// WithLogging выполняет роль миддлваре логирования запросов.
+// Регистрирует путь, метод, статус ответа, длительность и размер ответа для каждого запроса.
 func WithLogging(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

@@ -11,6 +11,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth/v5"
+	"github.com/go-resty/resty/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/RomanAgaltsev/urlcut/internal/api/middleware"
 	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
@@ -19,12 +25,6 @@ import (
 	"github.com/RomanAgaltsev/urlcut/internal/pkg/random"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
 	"github.com/RomanAgaltsev/urlcut/internal/services"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/jwtauth/v5"
-	"github.com/go-resty/resty/v2"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 type helper struct {
@@ -645,4 +645,196 @@ func TestAuthIDMiddleware(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, http.StatusNoContent, res.StatusCode())
+}
+
+func BenchmarkHandlers_Shorten(b *testing.B) {
+	hlp := newHelper(&testing.T{})
+	hlp.router.Post("/", hlp.handlers.Shorten)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
+	req := httpc.R()
+	req.Method = http.MethodPost
+	req.URL = httpSrv.URL
+	req.SetHeader("Content-Type", ContentTypeText).SetBody("https://practicum.yandex.ru/")
+
+	b.ResetTimer()
+	for range b.N {
+		_, _ = req.Send()
+	}
+}
+
+func BenchmarkHandlers_ShortenAPI(b *testing.B) {
+	hlp := newHelper(&testing.T{})
+	hlp.router.Post("/api/shorten", hlp.handlers.ShortenAPI)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
+	req := httpc.R()
+	req.Method = http.MethodPost
+	req.URL = httpSrv.URL + "/api/shorten"
+
+	req.SetHeader("Content-Type", ContentTypeJSON).SetBody(`{"url":"https://practicum.yandex.ru/"}`)
+
+	b.ResetTimer()
+	for range b.N {
+		_, _ = req.Send()
+	}
+}
+
+func BenchmarkHandlers_ShortenAPIBatch(b *testing.B) {
+	hlp := newHelper(&testing.T{})
+	hlp.router.Post("/api/shorten/batch", hlp.handlers.ShortenAPIBatch)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
+	req := httpc.R()
+	req.Method = http.MethodPost
+	req.URL = httpSrv.URL + "/api/shorten/batch"
+
+	req.SetHeader("Content-Type", ContentTypeJSON).
+		SetBody(`[{"correlation_id":"kj24njF2","original_url":"https://practicum.yandex.ru/"},{"correlation_id":"87sdFin3","original_url":"https://translate.yandex.ru/"}]`)
+
+	b.ResetTimer()
+	for range b.N {
+		_, _ = req.Send()
+	}
+}
+
+func BenchmarkHandlers_Expand(b *testing.B) {
+	hlp := newHelper(&testing.T{})
+	hlp.router.Post("/", hlp.handlers.Shorten)
+	hlp.router.Get("/{id}", hlp.handlers.Expand)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
+	reqPost := httpc.R()
+	reqPost.Method = http.MethodPost
+	reqPost.URL = httpSrv.URL
+
+	reqPost.SetHeader("Content-Type", ContentTypeText).SetBody("https://practicum.yandex.ru/")
+
+	b.ResetTimer()
+	for range b.N {
+		b.StopTimer()
+		resPost, err := reqPost.Send()
+		if err != nil {
+			continue
+		}
+
+		shortenedURL := string(resPost.Body())
+
+		urlID := strings.TrimPrefix(shortenedURL, hlp.cfg.BaseURL+"/")
+
+		req := httpc.R()
+		req.Method = http.MethodGet
+		req.URL = httpSrv.URL + "/" + urlID
+
+		req.SetHeader("Content-Type", ContentTypeText)
+
+		b.StartTimer()
+		_, _ = req.Send()
+	}
+}
+
+func BenchmarkHandlers_UserUrls(b *testing.B) {
+	hlp := newHelper(&testing.T{})
+	hlp.router.Get("/api/user/urls", hlp.handlers.UserUrls)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
+	req := httpc.R()
+	req.Method = http.MethodGet
+	req.URL = httpSrv.URL + "/api/user/urls"
+
+	req.SetHeader("Content-Type", ContentTypeText)
+
+	b.ResetTimer()
+	for range b.N {
+		_, _ = req.Send()
+	}
+}
+
+func BenchmarkHandlers_UserUrlsDelete(b *testing.B) {
+	hlp := newHelper(&testing.T{})
+	hlp.router.Delete("/api/user/urls", hlp.handlers.UserUrlsDelete)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
+	req := httpc.R()
+	req.Method = http.MethodDelete
+	req.URL = httpSrv.URL + "/api/user/urls"
+
+	req.SetHeader("Content-Type", ContentTypeJSON).SetBody(`["6qxTVvsy", "RTfd56hn", "Jlfd67ds"] `)
+
+	b.ResetTimer()
+	for range b.N {
+		_, _ = req.Send()
+	}
 }

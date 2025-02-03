@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RomanAgaltsev/urlcut/internal/model"
-	"github.com/RomanAgaltsev/urlcut/internal/pkg/random"
-
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/RomanAgaltsev/urlcut/internal/model"
+	"github.com/RomanAgaltsev/urlcut/internal/pkg/random"
 )
 
 func TestDBRepository(t *testing.T) {

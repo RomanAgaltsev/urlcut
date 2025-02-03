@@ -1,15 +1,20 @@
+// Пакет middleware реализует миддлваре для хендлеров запросов.
 package middleware
 
 import (
 	"context"
 	"net/http"
 
-	"github.com/RomanAgaltsev/urlcut/internal/pkg/auth"
-
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/lestrrat-go/jwx/v2/jwt"
+
+	"github.com/RomanAgaltsev/urlcut/internal/pkg/auth"
 )
 
+// WithAuth возвращает хендлер, обернутый в миддлваре авторизации.
+// Сначала выполняется поиск JWT токена с именем "jwt" в куки запроса.
+// Далее, если токен в куки не найден, выполняется получение токена из заголовка "Authorization".
+// Если токен не был найден, генерируется новый и в заголовки ответа добавляется кука с ним.
 func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +24,7 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 			var err error
 
 			// Пробуем получить токен из куки
-			tokenString = jwtauth.TokenFromCookie(r)
+			tokenString = tokenFromCookie(r)
 			if tokenString == "" {
 				// Пробуем получить токен из заголовка Authorization
 				tokenString = r.Header.Get("Authorization")
@@ -62,11 +67,13 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 	}
 }
 
+// WithID работает аналогично WithAuth, но, при отсутствии токена в куке или заголовке, не выдает новый,
+// а возвращает статус Unauthorized - отказывает в авторизации запроса.
 func WithID(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			// Пробуем получить токен из куки
-			tokenString := jwtauth.TokenFromCookie(r)
+			tokenString := tokenFromCookie(r)
 			if tokenString == "" {
 				// Пробуем получить токен из заголовка Authorization
 				tokenString = r.Header.Get("Authorization")
@@ -110,4 +117,13 @@ func WithID(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 		}
 		return http.HandlerFunc(fn)
 	}
+}
+
+func tokenFromCookie(r *http.Request) string {
+	for _, cookie := range r.Cookies() {
+		if cookie.Name == "jwt" {
+			return cookie.Value
+		}
+	}
+	return ""
 }

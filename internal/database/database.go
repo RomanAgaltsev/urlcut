@@ -1,3 +1,4 @@
+// Пакет database реализует функционал соединения с БД и миграции.
 package database
 
 import (
@@ -6,11 +7,16 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/RomanAgaltsev/urlcut/migrations"
-
 	"github.com/pressly/goose/v3"
+
+	"github.com/RomanAgaltsev/urlcut/migrations"
 )
 
+// NewConnection создает новое соединение с базой данных.
+// Выполняются следующие действия:
+//   - открывается соединение с БД с установкой параметров соединения
+//   - выполняется пинг БД
+//   - запускаются миграции
 func NewConnection(ctx context.Context, driver string, databaseDSN string) (*sql.DB, error) {
 	// Открываем соединение
 	db, err := sql.Open(driver, databaseDSN)
@@ -37,6 +43,7 @@ func NewConnection(ctx context.Context, driver string, databaseDSN string) (*sql
 	return db, err
 }
 
+// Migrate выполняет миграции базы данных.
 func Migrate(ctx context.Context, databaseDSN string) {
 	// Тут открываем своё соединение
 	db, err := goose.OpenDBWithDriver("pgx", databaseDSN)
@@ -58,7 +65,7 @@ func Migrate(ctx context.Context, databaseDSN string) {
 	// Устанавливаем папку с файлами миграции
 	goose.SetBaseFS(migrations.Migrations)
 
-	// Накатываем миграции 
+	// Накатываем миграции
 	if err = goose.UpContext(ctx, db, "."); err != nil {
 		slog.Error("goose: failed to run migrations", slog.String("error", err.Error()))
 	}

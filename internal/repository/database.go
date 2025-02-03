@@ -1,3 +1,4 @@
+// Пакет repository реализует in memory и database репозитории для сервиса сокращателя ссылок.
 package repository
 
 import (
@@ -5,15 +6,15 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/RomanAgaltsev/urlcut/internal/database/queries"
-	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
-	"github.com/RomanAgaltsev/urlcut/internal/model"
-
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"github.com/RomanAgaltsev/urlcut/internal/database/queries"
+	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
+	"github.com/RomanAgaltsev/urlcut/internal/model"
 )
 
 // Неиспользуемая переменная для проверки реализации интерфейса хранилища БД репозиторием
@@ -154,6 +155,7 @@ func (r *DBRepository) Get(ctx context.Context, id string) (*model.URL, error) {
 	}, nil
 }
 
+// GetUserURLs возвращает из БД хранилища URL пользователя по переданному идентификатору.
 func (r *DBRepository) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]*model.URL, error) {
 	// Получаем из БД URL по идентификатору пользователя при помощи retry операции
 	urlsQuery, err := backoff.RetryWithData(func() ([]queries.Url, error) {
@@ -187,6 +189,7 @@ func (r *DBRepository) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]*model
 	return urls, nil
 }
 
+// DeleteURLs удаляет в БД хранилище переданные URL.
 func (r *DBRepository) DeleteURLs(ctx context.Context, urls []*model.URL) error {
 	// Начинаем транзакцию
 	tx, err := r.db.Begin()

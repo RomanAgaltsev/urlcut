@@ -1,3 +1,4 @@
+// Пакет url реализует http-сервер и хендлеры получаемых сервером запросов.
 package url
 
 import (
@@ -9,29 +10,36 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+
 	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/database"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/model"
 	"github.com/RomanAgaltsev/urlcut/internal/pkg/auth"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 )
 
+// Служебные константы для заголовков.
 const (
+	// ContentTypeJSON используется для установки значений заголовков http-ответов.
 	ContentTypeJSON = "application/json"
+
+	// ContentTypeText используется для установки значений заголовков http-ответов.
 	ContentTypeText = "text/plain; charset=utf-8"
 )
 
+// ErrNoUserID ошибка отсутствия идентификатора пользователя в полученном запросе (в куке или заголовке).
 var ErrNoUserID = fmt.Errorf("no user ID provided")
 
+// Handlers владеет хендлерами получаемых http-запросов.
 type Handlers struct {
-	shortener interfaces.Service
-	cfg       *config.Config
+	shortener interfaces.Service // сервис сокращателя ссылок
+	cfg       *config.Config     // конфигурация приложения
 }
 
+// NewHandlers - функция-конструктор Handlers.
 func NewHandlers(shortener interfaces.Service, cfg *config.Config) *Handlers {
 	return &Handlers{
 		shortener: shortener,
@@ -40,6 +48,8 @@ func NewHandlers(shortener interfaces.Service, cfg *config.Config) *Handlers {
 }
 
 // Shorten выполняет обработку запроса на сокращение URL, который передается в текстовом формате.
+// Перед обработкой выполняется извлечение идентификатора пользователя из запроса.
+// При отсутствии идентификатора, обработка запроса прекращается и возвращается статус Unauthorized.
 func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -93,6 +103,8 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 }
 
 // ShortenAPI выполняет обработку запроса на сокращение URL, который передается в формате JSON.
+// Перед обработкой выполняется извлечение идентификатора пользователя из запроса.
+// При отсутствии идентификатора, обработка запроса прекращается и возвращается статус Unauthorized.
 func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -161,6 +173,8 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 // ShortenAPIBatch выполняет обработку запроса на сокращение массива URL (батча), который передается в формате JSON.
+// Перед обработкой выполняется извлечение идентификатора пользователя из запроса.
+// При отсутствии идентификатора, обработка запроса прекращается и возвращается статус Unauthorized.
 func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -238,6 +252,8 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 }
 
 // Expand выполняет обработку запроса на получение оригинального URL.
+// Перед обработкой выполняется извлечение идентификатора пользователя из запроса.
+// При отсутствии идентификатора, обработка запроса прекращается и возвращается статус Unauthorized.
 func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -278,6 +294,8 @@ func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
 }
 
 // Ping выполняет обработку запроса на пинг хранилища.
+// Перед обработкой выполняется извлечение идентификатора пользователя из запроса.
+// При отсутствии идентификатора, обработка запроса прекращается и возвращается статус Unauthorized.
 func (h *Handlers) Ping(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -299,6 +317,9 @@ func (h *Handlers) Ping(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// UserUrls выполняет обработку запроса на получение списка всех сохраненных URL пользователя.
+// Перед обработкой выполняется извлечение идентификатора пользователя из запроса.
+// При отсутствии идентификатора, обработка запроса прекращается и возвращается статус Unauthorized.
 func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -340,6 +361,9 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UserUrlsDelete выполняет обработку запроса на удаление всех сохраненных URL пользователя.
+// Перед обработкой выполняется извлечение идентификатора пользователя из запроса.
+// При отсутствии идентификатора, обработка запроса прекращается и возвращается статус Unauthorized.
 func (h *Handlers) UserUrlsDelete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

@@ -5,11 +5,11 @@ import (
 
 	"testing"
 
-	"github.com/RomanAgaltsev/urlcut/internal/model"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/google/uuid"
+	"github.com/RomanAgaltsev/urlcut/internal/model"
 )
 
 func TestInMemoryRepository(t *testing.T) {
