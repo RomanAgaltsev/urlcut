@@ -122,7 +122,7 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 
 	// Читаем тело запроса
 	var req model.URLDTO
-	if err := dec.Decode(&req); err != nil {
+	if err = dec.Decode(&req); err != nil {
 		slog.Info("failed to unmarshal long URL", "error", err.Error())
 		http.Error(w, "please look at logs", http.StatusInternalServerError)
 		return
@@ -204,7 +204,7 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 	// Читаем данные батча
 	for dec.More() {
 		var batchReq model.IncomingBatchDTO
-		if err := dec.Decode(&batchReq); err != nil {
+		if err = dec.Decode(&batchReq); err != nil {
 			slog.Info("failed to decode batch element", "error", err.Error())
 			http.Error(w, "please look at logs", http.StatusInternalServerError)
 			return
