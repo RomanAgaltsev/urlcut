@@ -56,7 +56,6 @@ func (h *Handlers) Shorten(w http.ResponseWriter, r *http.Request) {
 	// Получаем идентификатор пользователя
 	uid, err := getUserUID(r)
 	if err != nil {
-		// Что-то пошло не так - в авторизации отказываем
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
@@ -111,7 +110,6 @@ func (h *Handlers) ShortenAPI(w http.ResponseWriter, r *http.Request) {
 	// Получаем идентификатор пользователя
 	uid, err := getUserUID(r)
 	if err != nil {
-		// Что-то пошло не так - в авторизации отказываем
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
@@ -181,7 +179,6 @@ func (h *Handlers) ShortenAPIBatch(w http.ResponseWriter, r *http.Request) {
 	// Получаем идентификатор пользователя
 	uid, err := getUserUID(r)
 	if err != nil {
-		// Что-то пошло не так - в авторизации отказываем
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
@@ -260,7 +257,6 @@ func (h *Handlers) Expand(w http.ResponseWriter, r *http.Request) {
 	// Получаем идентификатор пользователя
 	_, err := getUserUID(r)
 	if err != nil {
-		// Что-то пошло не так - в авторизации отказываем
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
@@ -302,7 +298,6 @@ func (h *Handlers) Ping(w http.ResponseWriter, r *http.Request) {
 	// Получаем идентификатор пользователя
 	_, err := getUserUID(r)
 	if err != nil {
-		// Что-то пошло не так - в авторизации отказываем
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
@@ -326,7 +321,6 @@ func (h *Handlers) UserUrls(w http.ResponseWriter, r *http.Request) {
 	// Получаем идентификатор пользователя
 	uid, err := getUserUID(r)
 	if err != nil {
-		// Что-то пошло не так - в авторизации отказываем
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
@@ -370,7 +364,6 @@ func (h *Handlers) UserUrlsDelete(w http.ResponseWriter, r *http.Request) {
 	// Получаем идентификатор пользователя
 	uid, err := getUserUID(r)
 	if err != nil {
-		// Что-то пошло не так - в авторизации отказываем
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
@@ -410,21 +403,18 @@ func getUserUID(r *http.Request) (uuid.UUID, error) {
 	// Получаем идентификатор-интерфейс пользователя из контекста
 	uidInterface := r.Context().Value(auth.UserIDClaimName)
 	if uidInterface == nil {
-		// Идентификатора нет
 		return uuid.Nil, ErrNoUserID
 	}
 
 	// Идентификатор-интерфейс есть, пробуем привести к строке
 	uidString, ok := uidInterface.(string)
 	if !ok {
-		// Привести к строке не получилось
 		return uuid.Nil, ErrNoUserID
 	}
 
 	// Пробуем парсить строку в uuid
 	uid, err := uuid.Parse(uidString)
 	if err != nil {
-		// Привести к строке не получилось
 		return uuid.Nil, ErrNoUserID
 	}
 
