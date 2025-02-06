@@ -8,9 +8,9 @@
 //  5. Собственный анализатор - osexitanalyzer, который проверяет наличие вызовов os.Exit в функции main пакета main.
 //
 // Использование:
-//  $ go build -o staticlint *.go
-//  $ ./staticlint ./...
 //
+//	$ go build -o staticlint *.go
+//	$ ./staticlint ./...
 package main
 
 import (
