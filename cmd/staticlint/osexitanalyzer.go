@@ -28,7 +28,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	for _, file := range pass.Files {
-		if file.Name.Name != "main" {
+		if file.Name.String() != "main" {
 			continue
 		}
 
@@ -41,6 +41,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		ast.Inspect(file, func(node ast.Node) bool {
 			switch x := node.(type) {
 			case *ast.FuncDecl:
+				isFuncMain = false
 				if x.Name.Name == "main" {
 					isFuncMain = true
 				}
