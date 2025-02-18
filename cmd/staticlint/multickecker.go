@@ -29,7 +29,7 @@ import (
 )
 
 func main() {
-	checks := make([]*analysis.Analyzer, 0)
+	checks := make([]*analysis.Analyzer, 0, 110)
 
 	// Стандартные анализаторы
 	checks = append(checks,
