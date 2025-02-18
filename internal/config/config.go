@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 )
 
 // ErrInitConfigFailed - ошибка инициации конфигурации.
@@ -17,6 +18,7 @@ type Config struct {
 	FileStoragePath string // Путь к файловому хранилищу
 	DatabaseDSN     string // Строка соединения с БД
 	SecretKey       string // Секретный ключ авторизации
+	EnableHTTPS     bool   // Регулирует включение HTTPS на сервере
 	IDlength        int    // Длина идентификатора в сокращенном URL
 }
 
@@ -27,6 +29,7 @@ type configBuilder struct {
 	fileStoragePath string `env:"FILE_STORAGE_PATH"`
 	databaseDSN     string `env:"DATABASE_DSN"`
 	secretKey       string `env:"SECRET_KEY"`
+	enableHTTPS     bool   `env:"ENABLE_HTTPS"`
 	idLength        int
 }
 
@@ -42,6 +45,7 @@ func (cb *configBuilder) setDefaults() error {
 	cb.fileStoragePath = "storage.json"
 	cb.databaseDSN = ""
 	cb.secretKey = "secret"
+	cb.enableHTTPS = false
 	cb.idLength = 8
 
 	return nil
@@ -54,6 +58,7 @@ func (cb *configBuilder) setFlags() error {
 	flag.StringVar(&cb.fileStoragePath, "f", cb.fileStoragePath, "path to the storage file")
 	flag.StringVar(&cb.databaseDSN, "d", cb.databaseDSN, "database connection string")
 	flag.StringVar(&cb.secretKey, "k", cb.secretKey, "secret authorization key")
+	flag.BoolVar(&cb.enableHTTPS, "s", cb.enableHTTPS, "enable HTTPS on server")
 	flag.IntVar(&cb.idLength, "l", cb.idLength, "URL ID default length")
 	flag.Parse()
 
@@ -82,6 +87,16 @@ func (cb *configBuilder) setEnvs() error {
 		cb.databaseDSN = dsn
 	}
 
+	eh := os.Getenv("ENABLE_HTTPS")
+	if eh != "" {
+		enableHTTPS, errConv := strconv.ParseBool(eh)
+		if errConv != nil {
+			cb.enableHTTPS = false
+		} else {
+			cb.enableHTTPS = enableHTTPS
+		}
+	}
+
 	sk := os.Getenv("SECRET_KEY")
 	if dsn != "" {
 		cb.secretKey = sk
@@ -98,6 +113,7 @@ func (cb *configBuilder) build() *Config {
 		FileStoragePath: cb.fileStoragePath,
 		DatabaseDSN:     cb.databaseDSN,
 		SecretKey:       cb.secretKey,
+		EnableHTTPS:     cb.enableHTTPS,
 		IDlength:        cb.idLength,
 	}
 }

@@ -75,7 +75,6 @@ func NewCertificate() error {
 
 func writeCertFile(fname string, ftype string, fbytes []byte) error {
 	var b bytes.Buffer
-
 	err := pem.Encode(&b, &pem.Block{
 		Type:  ftype,
 		Bytes: fbytes,
