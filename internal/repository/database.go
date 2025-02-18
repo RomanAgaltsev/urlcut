@@ -40,7 +40,6 @@ func NewDBRepository(db *sql.DB) (*DBRepository, error) {
 	// Сначала пробуем подготовить стейтменты запросов
 	q, err := queries.Prepare(context.Background(), db)
 	if err != nil {
-		// Не получилось подготовить запросы, будем жить без подготовленных...
 		q = queries.New(db)
 	}
 
@@ -92,8 +91,7 @@ func (r *DBRepository) Store(ctx context.Context, urls []*model.URL) (*model.URL
 			})
 			// Проверяем ошибку на конфликт
 			if errors.As(errbo, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-				// Это конфликт
-				// При любой ошибке транзакцию надо откатывать
+				// Это конфликт. При любой ошибке транзакцию надо откатывать
 				errrb := tx.Rollback()
 				if errrb != nil {
 					return ce, errrb
@@ -170,13 +168,10 @@ func (r *DBRepository) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]*model
 
 	// Перекладываем URL из результата запроса в слайс
 	for _, url := range urlsQuery {
-		// Проверяем, не отменили ли контекст
 		select {
 		case <-ctx.Done():
-			// Контекст отменили - возвращаем ничего и ошибку контекста
 			return nil, ctx.Err()
 		default:
-			// Контекст не отменили - продолжаем перекладывать
 			urls = append(urls, &model.URL{
 				Long: url.LongUrl,
 				Base: url.BaseUrl,

@@ -46,9 +46,9 @@ func writeToFile(fileStoragePath string, m map[string]*model.URL) error {
 	// Писать в файл будем через буфер
 	writer := bufio.NewWriter(file)
 	for _, v := range m {
-		data, err := json.Marshal(*v)
-		if err != nil {
-			return err
+		data, errj := json.Marshal(*v)
+		if errj != nil {
+			return errj
 		}
 		if _, err = writer.Write(data); err != nil {
 			return err

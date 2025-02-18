@@ -43,7 +43,6 @@ func WithAuth(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
 				token, _ = ja.Decode(tokenString)
 				// Пробуем валидировать токен
 				if err = jwt.Validate(token, ja.ValidateOptions()...); err != nil {
-					// Валидировать токен не удалось, выдаем куку
 					token, tokenString, err = auth.NewJWTToken(ja)
 					if err != nil {
 						http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

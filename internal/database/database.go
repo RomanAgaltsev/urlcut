@@ -52,7 +52,7 @@ func Migrate(ctx context.Context, databaseDSN string) {
 	}
 	// Откладываем закрытие соединения
 	defer func() {
-		if err := db.Close(); err != nil {
+		if err = db.Close(); err != nil {
 			slog.Error("goose: failed to close DB connection", slog.String("error", err.Error()))
 		}
 	}()

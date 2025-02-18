@@ -625,6 +625,18 @@ func TestAuthIDMiddleware(t *testing.T) {
 	httpSrv := httptest.NewServer(hlp.router)
 	defer httpSrv.Close()
 
+	httpc := resty.New()
+
+	req := httpc.R()
+	req.Method = http.MethodGet
+	req.URL = httpSrv.URL + "/auth"
+
+	res, err := req.
+		SetHeader("Content-Type", ContentTypeText).
+		Send()
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusUnauthorized, res.StatusCode())
+
 	u, _ := url.Parse(httpSrv.URL)
 	jar, _ := cookiejar.New(nil)
 	jar.SetCookies(u, []*http.Cookie{{
@@ -633,13 +645,13 @@ func TestAuthIDMiddleware(t *testing.T) {
 		Path:  "/",
 	}})
 
-	httpc := resty.New().SetCookieJar(jar)
+	httpc.SetCookieJar(jar)
 
-	req := httpc.R()
+	req = httpc.R()
 	req.Method = http.MethodGet
 	req.URL = httpSrv.URL + "/auth"
 
-	res, err := req.
+	res, err = req.
 		SetHeader("Content-Type", ContentTypeText).
 		Send()
 	assert.NoError(t, err)

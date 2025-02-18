@@ -63,7 +63,6 @@ func (s *Shortener) Shorten(ctx context.Context, longURL string, uid uuid.UUID) 
 	// Сохраняем структуру URL в репозитории
 	duplicatedURL, err := s.repository.Store(ctx, []*model.URL{url})
 	if errors.Is(err, repository.ErrConflict) {
-		// При наличии конфликта должна вернуться ранее сохраненная сокращенная ссылка
 		return duplicatedURL, err
 	}
 	if err != nil {
@@ -99,7 +98,6 @@ func (s *Shortener) ShortenBatch(ctx context.Context, batch []model.IncomingBatc
 
 	// Если был конфликт, вернем дубль
 	if errors.Is(err, repository.ErrConflict) {
-		// При наличии конфликта должна вернуться ранее сохраненная сокращенная ссылка
 		batchShortened = append(batchShortened, model.OutgoingBatchDTO{
 			CorrelationID: duplicatedURL.CorrID,
 			ShortURL:      duplicatedURL.Short(),
@@ -180,7 +178,6 @@ func (s *Shortener) deleteURLs() {
 		case <-ticker.C:
 			// Очередной интервал прошел, проверяем наличие URL к удалению
 			if len(urls) == 0 {
-				// Нет ничего - продолжаем
 				continue
 			}
 			// Устанавливаем пометку на удаление для полученных URL

@@ -42,13 +42,13 @@ func NewServer(shortener interfaces.Service, cfg *config.Config) (*http.Server, 
 		r.Post("/api/shorten/batch", handlers.ShortenAPIBatch)
 		r.Get("/{id}", handlers.Expand)
 		r.Get("/ping", handlers.Ping)
+		r.Get("/api/user/urls", handlers.UserUrls)
 	})
 	// -- идентификатор требуется
 	router.Group(func(r chi.Router) {
 		// Миддвале, проверяющая наличие идентификтара
 		r.Use(middleware.WithID(tokenAuth))
 
-		r.Get("/api/user/urls", handlers.UserUrls)
 		r.Delete("/api/user/urls", handlers.UserUrlsDelete)
 	})
 
