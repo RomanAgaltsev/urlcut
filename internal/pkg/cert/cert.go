@@ -16,14 +16,14 @@ import (
 
 const (
 	// CertPEM содержит имя файла сертификата TLS.
-	CertPEM string = "cert.pem"
+	CertPEM string = "certs/cert.pem"
 
 	// PrivateKeyPEM содержит имя файла приватного ключа TLS.
-	PrivateKeyPEM string = "privatekey.pem"
+	PrivateKeyPEM string = "certs/privatekey.pem"
 )
 
-// NewCertificate создает новый сертификат и приватный ключ TLS.
-func NewCertificate() error {
+// CreateCertificate создает новый сертификат и приватный ключ TLS.
+func CreateCertificate() error {
 	// создаём шаблон сертификата
 	cert := &x509.Certificate{
 		// указываем уникальный номер сертификата
