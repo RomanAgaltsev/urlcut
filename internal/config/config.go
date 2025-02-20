@@ -2,8 +2,10 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 )
@@ -13,13 +15,13 @@ var ErrInitConfigFailed = fmt.Errorf("failed to init config")
 
 // Config - структура конфигурации приложения.
 type Config struct {
-	ServerPort      string // Адрес HTTP сервера и порт
-	BaseURL         string // Базовый адрес сокращенного URL
-	FileStoragePath string // Путь к файловому хранилищу
-	DatabaseDSN     string // Строка соединения с БД
-	SecretKey       string // Секретный ключ авторизации
-	EnableHTTPS     bool   // Регулирует включение HTTPS на сервере
-	IDlength        int    // Длина идентификатора в сокращенном URL
+	ServerPort      string `json:"server_address"`    // Адрес HTTP сервера и порт
+	BaseURL         string `json:"base_url"`          // Базовый адрес сокращенного URL
+	FileStoragePath string `json:"file_storage_path"` // Путь к файловому хранилищу
+	DatabaseDSN     string `json:"database_dsn"`      // Строка соединения с БД
+	SecretKey       string `json:"secret_key"`        // Секретный ключ авторизации
+	EnableHTTPS     bool   `json:"enable_https"`      // Регулирует включение HTTPS на сервере
+	IDlength        int    `json:"id_length"`         // Длина идентификатора в сокращенном URL
 }
 
 // configBuilder - строитель конфигурации приложения.
@@ -67,6 +69,23 @@ func (cb *configBuilder) setFlags() error {
 
 // setEnvs устанавливает значения конфигурации приложения из переменных окружения.
 func (cb *configBuilder) setEnvs() error {
+	// Получаем конфигурацию из файла
+	configFile := os.Getenv("CONFIG")
+	if configFile != "" {
+		fromFile, err := configFromFile(configFile)
+		if err != nil {
+			log.Printf("reading config from file : %s", err.Error())
+		} else {
+			cb.serverPort = fromFile.ServerPort
+			cb.baseURL = fromFile.BaseURL
+			cb.fileStoragePath = fromFile.FileStoragePath
+			cb.databaseDSN = fromFile.FileStoragePath
+			cb.secretKey = fromFile.SecretKey
+			cb.enableHTTPS = fromFile.EnableHTTPS
+			cb.idLength = fromFile.IDlength
+		}
+	}
+
 	sp := os.Getenv("SERVER_ADDRESS")
 	if sp != "" {
 		cb.serverPort = sp
@@ -116,6 +135,22 @@ func (cb *configBuilder) build() *Config {
 		EnableHTTPS:     cb.enableHTTPS,
 		IDlength:        cb.idLength,
 	}
+}
+
+// configFromFile читает и возвращает конфигурацию приложения из JSON файла.
+func configFromFile(fname string) (Config, error) {
+	var cfg Config
+
+	data, err := os.ReadFile(fname)
+	if err != nil {
+		return cfg, err
+	}
+
+	if err = json.Unmarshal(data, &cfg); err != nil {
+		return cfg, err
+	}
+
+	return cfg, nil
 }
 
 // Get возвращает конфигурацию приложения.
