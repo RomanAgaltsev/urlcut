@@ -76,13 +76,30 @@ func (cb *configBuilder) setEnvs() error {
 		if err != nil {
 			log.Printf("reading config from file : %s", err.Error())
 		} else {
-			cb.serverPort = fromFile.ServerPort
-			cb.baseURL = fromFile.BaseURL
-			cb.fileStoragePath = fromFile.FileStoragePath
-			cb.databaseDSN = fromFile.FileStoragePath
-			cb.secretKey = fromFile.SecretKey
-			cb.enableHTTPS = fromFile.EnableHTTPS
-			cb.idLength = fromFile.IDlength
+			if fromFile.ServerPort != "" {
+				cb.serverPort = fromFile.ServerPort
+			}
+			if fromFile.BaseURL != "" {
+				cb.baseURL = fromFile.BaseURL
+			}
+			if fromFile.FileStoragePath != "" {
+				cb.fileStoragePath = fromFile.FileStoragePath
+			}
+			if fromFile.DatabaseDSN != "" {
+				cb.databaseDSN = fromFile.DatabaseDSN
+			}
+			if fromFile.SecretKey != "" {
+				cb.secretKey = fromFile.SecretKey
+			}
+			if fromFile.EnableHTTPS {
+				cb.enableHTTPS = fromFile.EnableHTTPS
+			}
+			if fromFile.EnableHTTPS {
+				cb.enableHTTPS = fromFile.EnableHTTPS
+			}
+			if fromFile.IDlength != 0 {
+				cb.idLength = fromFile.IDlength
+			}
 		}
 	}
 

@@ -53,8 +53,8 @@ func TestGet(t *testing.T) {
 				"-s", "true",
 				"-l", "8"},
 			&Config{
-				ServerPort:      "localhost:8082",
-				BaseURL:         "http://localhost:8082",
+				ServerPort:      "localhost:8080",
+				BaseURL:         "http://localhost:8080",
 				FileStoragePath: "storage.json",
 				DatabaseDSN:     "test1_dsn",
 				SecretKey:       "secret_key1",
@@ -105,7 +105,7 @@ func TestGet(t *testing.T) {
 				"-d", "test1_dsn"},
 			&Config{
 				ServerPort:      "localhost:8084",
-				BaseURL:         "http://localhost:8085",
+				BaseURL:         "http://localhost:8080",
 				FileStoragePath: "storage2.json",
 				DatabaseDSN:     "",
 				SecretKey:       "secret_key1",
@@ -125,7 +125,7 @@ func TestGet(t *testing.T) {
 				"-a", "localhost:8087",
 				"-l", "8"},
 			&Config{
-				ServerPort:      "localhost:8087",
+				ServerPort:      "localhost:8080",
 				BaseURL:         "http://localhost:8086",
 				FileStoragePath: "storage1.json",
 				DatabaseDSN:     "test_dsn",
@@ -167,7 +167,7 @@ func TestGet(t *testing.T) {
 				"-s", "true",
 				"-l", "8"},
 			&Config{
-				ServerPort:      "localhost:8091",
+				ServerPort:      "localhost:8080",
 				BaseURL:         "http://localhost:8090",
 				FileStoragePath: "storage2.json",
 				DatabaseDSN:     "test1_dsn",
@@ -189,6 +189,8 @@ func TestGet(t *testing.T) {
 			}()
 
 			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+
+			t.Setenv("CONFIG", "config.json")
 
 			for k, v := range test.envs {
 				t.Setenv(k, v)
