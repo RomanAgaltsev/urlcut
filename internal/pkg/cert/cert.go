@@ -14,13 +14,11 @@ import (
 	"time"
 )
 
-const (
-	// CertPEM содержит имя файла сертификата TLS.
-	CertPEM string = "certs/cert.pem"
+// CertPEM содержит имя файла сертификата TLS.
+const CertPEM string = "certs/cert.pem"
 
-	// PrivateKeyPEM содержит имя файла приватного ключа TLS.
-	PrivateKeyPEM string = "certs/privatekey.pem"
-)
+// PrivateKeyPEM содержит имя файла приватного ключа TLS.
+const PrivateKeyPEM string = "certs/privatekey.pem"
 
 // CreateCertificate создает новый сертификат и приватный ключ TLS.
 func CreateCertificate() error {
