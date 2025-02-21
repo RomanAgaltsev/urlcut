@@ -152,7 +152,7 @@ func (a *App) runShortenerApp() error {
 	var err error
 	if a.cfg.EnableHTTPS {
 		slog.Info("creating certificate")
-		err = cert.CreateCertificate()
+		err = cert.CreateCertificate(cert.CertPEM, cert.PrivateKeyPEM)
 		if err != nil {
 			slog.Error("certificate creation", slog.String("error", err.Error()))
 			return err

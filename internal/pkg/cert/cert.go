@@ -21,7 +21,7 @@ const CertPEM string = "certs/cert.pem"
 const PrivateKeyPEM string = "certs/privatekey.pem"
 
 // CreateCertificate создает новый сертификат и приватный ключ TLS.
-func CreateCertificate() error {
+func CreateCertificate(certFileName string, keyFileName string) error {
 	// создаём шаблон сертификата
 	cert := &x509.Certificate{
 		// указываем уникальный номер сертификата
@@ -58,12 +58,12 @@ func CreateCertificate() error {
 
 	// сохраняем сертификат и ключ в формате PEM, который
 	// используется для хранения и обмена криптографическими ключами
-	err = writeCertFile(CertPEM, "CERTIFICATE", certBytes)
+	err = writeCertFile(certFileName, "CERTIFICATE", certBytes)
 	if err != nil {
 		return err
 	}
 
-	err = writeCertFile(PrivateKeyPEM, "RSA PRIVATE KEY", x509.MarshalPKCS1PrivateKey(privateKey))
+	err = writeCertFile(keyFileName, "RSA PRIVATE KEY", x509.MarshalPKCS1PrivateKey(privateKey))
 	if err != nil {
 		return err
 	}
