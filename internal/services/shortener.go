@@ -192,6 +192,10 @@ func (s *Shortener) deleteURLs() {
 	}
 }
 
+func (s *Shortener) Stats(ctx context.Context) (*model.StatsDTO, error) {
+	return nil, nil
+}
+
 // Close закрывает репозиторий ссылок сокращателя.
 func (s *Shortener) Close() error {
 	// Закрываем канал сбора URL к удалению

@@ -92,6 +92,10 @@ func (r *InMemoryRepository) DeleteURLs(_ context.Context, urls []*model.URL) er
 	return nil
 }
 
+func (r *InMemoryRepository) GetStats(ctx context.Context) (*model.Stats, error) {
+	return nil, nil
+}
+
 // Close сохраняет данные из in memory репозитория в файловое хранилище.
 func (r *InMemoryRepository) Close() error {
 	return writeToFile(r.f, r.m)

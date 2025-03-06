@@ -215,6 +215,10 @@ func (r *DBRepository) DeleteURLs(ctx context.Context, urls []*model.URL) error 
 	return tx.Commit()
 }
 
+func (r *DBRepository) GetStats(ctx context.Context) (*model.Stats, error) {
+	return nil, nil
+}
+
 // Close закрывает соединение с БД.
 func (r *DBRepository) Close() error {
 	err := r.q.Close()
