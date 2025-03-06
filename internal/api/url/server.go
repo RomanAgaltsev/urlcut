@@ -54,8 +54,9 @@ func NewServer(shortener interfaces.Service, cfg *config.Config) (*http.Server, 
 	})
 	// -- доступ только из доверенной подсети
 	router.Group(func(r chi.Router) {
-		// Миддлваре, устанавливающая в RemoteAddr в запроса значение из заголовков "X-Real-IP" или "X-Forwarded-For"
+		// Миддлваре, устанавливающая в RemoteAddr запроса значение из заголовков "X-Real-IP" или "X-Forwarded-For"
 		r.Use(chimiddleware.RealIP)
+		r.Use(middleware.WithTrustedSubnet(cfg.TrustedSubnet))
 
 		r.Get("/api/internal/stats", handlers.Stats)
 	})

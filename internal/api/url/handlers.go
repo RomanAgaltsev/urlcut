@@ -398,8 +398,38 @@ func (h *Handlers) UserUrlsDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
+// Stats выполняет обработку запроса на получении статистики сервиса.
 func (h *Handlers) Stats(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 
+	// Получаем идентификатор пользователя
+	_, err := getUserUID(r)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	stats, err := h.shortener.Stats(ctx)
+	if err != nil {
+		slog.Info("failed to get stats", "error", err.Error())
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
+		return
+	}
+
+	// Пишем заголовки
+	w.Header().Set("Content-Type", ContentTypeJSON)
+
+	w.WriteHeader(http.StatusOK)
+
+	// Данные в тело ответа будем записывать при помощи JSON енкодера
+	enc := json.NewEncoder(w)
+
+	err = enc.Encode(stats)
+	if err != nil {
+		slog.Info("failed to encode stats", "error", err.Error())
+		http.Error(w, "please look at logs", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getUserUid получает идентификатор пользователя из контекста запроса.
