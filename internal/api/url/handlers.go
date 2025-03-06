@@ -398,6 +398,10 @@ func (h *Handlers) UserUrlsDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
+func (h *Handlers) Stats(w http.ResponseWriter, r *http.Request) {
+
+}
+
 // getUserUid получает идентификатор пользователя из контекста запроса.
 func getUserUID(r *http.Request) (uuid.UUID, error) {
 	// Получаем идентификатор-интерфейс пользователя из контекста
