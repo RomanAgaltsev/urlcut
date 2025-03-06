@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"testing"
 	"time"
@@ -40,12 +41,12 @@ func TestDBRepository(t *testing.T) {
 		AddRow(1, longURL, BaseURL, urlID, time.Now(), uid, false)
 	rowsSel := sqlmock.NewRows([]string{"id", "long_url", "base_url", "url_id", "created_at", "uid", "is_deleted"}).
 		AddRow(1, longURL, BaseURL, urlID, time.Now(), uid, false)
+	rowsStats := sqlmock.NewRows([]string{"urls", "users"})
 
 	mock.ExpectPrepare("(.*)UPDATE(.*)")
 	mock.ExpectPrepare("(.*)SELECT(.*)")
 	mock.ExpectPrepare("(.*)SELECT(.*)")
 	mock.ExpectPrepare("(.*)SELECT(.*)")
-	mock.ExpectPrepare("(.*)INSERT(.*)")
 	mock.ExpectBegin()
 	mock.ExpectQuery("(.*)INSERT(.*)").
 		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
@@ -62,6 +63,9 @@ func TestDBRepository(t *testing.T) {
 		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
+	mock.ExpectQuery("(.*)SELECT(.*)").
+		WithArgs().
+		WillReturnRows(rowsStats)
 	mock.ExpectClose()
 
 	dbRepository, err := NewDBRepository(db)
@@ -85,6 +89,10 @@ func TestDBRepository(t *testing.T) {
 
 	err = dbRepository.DeleteURLs(context.TODO(), []*model.URL{urlS})
 	require.NoError(t, err)
+
+	stats, err := dbRepository.GetStats(context.TODO())
+	assert.Equal(t, err, sql.ErrNoRows)
+	assert.Nil(t, stats)
 
 	err = dbRepository.Close()
 	require.NoError(t, err)
