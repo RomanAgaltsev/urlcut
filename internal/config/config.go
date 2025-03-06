@@ -2,9 +2,12 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
+	"strconv"
 )
 
 // ErrInitConfigFailed - ошибка инициации конфигурации.
@@ -12,12 +15,13 @@ var ErrInitConfigFailed = fmt.Errorf("failed to init config")
 
 // Config - структура конфигурации приложения.
 type Config struct {
-	ServerPort      string // Адрес HTTP сервера и порт
-	BaseURL         string // Базовый адрес сокращенного URL
-	FileStoragePath string // Путь к файловому хранилищу
-	DatabaseDSN     string // Строка соединения с БД
-	SecretKey       string // Секретный ключ авторизации
-	IDlength        int    // Длина идентификатора в сокращенном URL
+	ServerPort      string `json:"server_address"`    // Адрес HTTP сервера и порт
+	BaseURL         string `json:"base_url"`          // Базовый адрес сокращенного URL
+	FileStoragePath string `json:"file_storage_path"` // Путь к файловому хранилищу
+	DatabaseDSN     string `json:"database_dsn"`      // Строка соединения с БД
+	SecretKey       string `json:"secret_key"`        // Секретный ключ авторизации
+	EnableHTTPS     bool   `json:"enable_https"`      // Регулирует включение HTTPS на сервере
+	IDlength        int    `json:"id_length"`         // Длина идентификатора в сокращенном URL
 }
 
 // configBuilder - строитель конфигурации приложения.
@@ -27,6 +31,7 @@ type configBuilder struct {
 	fileStoragePath string `env:"FILE_STORAGE_PATH"`
 	databaseDSN     string `env:"DATABASE_DSN"`
 	secretKey       string `env:"SECRET_KEY"`
+	enableHTTPS     bool   `env:"ENABLE_HTTPS"`
 	idLength        int
 }
 
@@ -42,6 +47,7 @@ func (cb *configBuilder) setDefaults() error {
 	cb.fileStoragePath = "storage.json"
 	cb.databaseDSN = ""
 	cb.secretKey = "secret"
+	cb.enableHTTPS = false
 	cb.idLength = 8
 
 	return nil
@@ -54,6 +60,7 @@ func (cb *configBuilder) setFlags() error {
 	flag.StringVar(&cb.fileStoragePath, "f", cb.fileStoragePath, "path to the storage file")
 	flag.StringVar(&cb.databaseDSN, "d", cb.databaseDSN, "database connection string")
 	flag.StringVar(&cb.secretKey, "k", cb.secretKey, "secret authorization key")
+	flag.BoolVar(&cb.enableHTTPS, "s", cb.enableHTTPS, "enable HTTPS on server")
 	flag.IntVar(&cb.idLength, "l", cb.idLength, "URL ID default length")
 	flag.Parse()
 
@@ -62,6 +69,40 @@ func (cb *configBuilder) setFlags() error {
 
 // setEnvs устанавливает значения конфигурации приложения из переменных окружения.
 func (cb *configBuilder) setEnvs() error {
+	// Получаем конфигурацию из файла
+	configFile := os.Getenv("CONFIG")
+	if configFile != "" {
+		fromFile, err := configFromFile(configFile)
+		if err != nil {
+			log.Printf("reading config from file : %s", err.Error())
+		} else {
+			if fromFile.ServerPort != "" {
+				cb.serverPort = fromFile.ServerPort
+			}
+			if fromFile.BaseURL != "" {
+				cb.baseURL = fromFile.BaseURL
+			}
+			if fromFile.FileStoragePath != "" {
+				cb.fileStoragePath = fromFile.FileStoragePath
+			}
+			if fromFile.DatabaseDSN != "" {
+				cb.databaseDSN = fromFile.DatabaseDSN
+			}
+			if fromFile.SecretKey != "" {
+				cb.secretKey = fromFile.SecretKey
+			}
+			if fromFile.EnableHTTPS {
+				cb.enableHTTPS = fromFile.EnableHTTPS
+			}
+			if fromFile.EnableHTTPS {
+				cb.enableHTTPS = fromFile.EnableHTTPS
+			}
+			if fromFile.IDlength != 0 {
+				cb.idLength = fromFile.IDlength
+			}
+		}
+	}
+
 	sp := os.Getenv("SERVER_ADDRESS")
 	if sp != "" {
 		cb.serverPort = sp
@@ -82,6 +123,16 @@ func (cb *configBuilder) setEnvs() error {
 		cb.databaseDSN = dsn
 	}
 
+	eh := os.Getenv("ENABLE_HTTPS")
+	if eh != "" {
+		enableHTTPS, errConv := strconv.ParseBool(eh)
+		if errConv != nil {
+			cb.enableHTTPS = false
+		} else {
+			cb.enableHTTPS = enableHTTPS
+		}
+	}
+
 	sk := os.Getenv("SECRET_KEY")
 	if dsn != "" {
 		cb.secretKey = sk
@@ -98,8 +149,25 @@ func (cb *configBuilder) build() *Config {
 		FileStoragePath: cb.fileStoragePath,
 		DatabaseDSN:     cb.databaseDSN,
 		SecretKey:       cb.secretKey,
+		EnableHTTPS:     cb.enableHTTPS,
 		IDlength:        cb.idLength,
 	}
+}
+
+// configFromFile читает и возвращает конфигурацию приложения из JSON файла.
+func configFromFile(fname string) (Config, error) {
+	var cfg Config
+
+	data, err := os.ReadFile(fname)
+	if err != nil {
+		return cfg, err
+	}
+
+	if err = json.Unmarshal(data, &cfg); err != nil {
+		return cfg, err
+	}
+
+	return cfg, nil
 }
 
 // Get возвращает конфигурацию приложения.

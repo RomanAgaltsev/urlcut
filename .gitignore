@@ -27,3 +27,6 @@ vendor/
 storage.json
 test.json
 cover.html
+
+# Certificate
+*.pem

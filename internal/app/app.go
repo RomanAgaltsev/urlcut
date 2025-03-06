@@ -4,6 +4,7 @@ package app
 import (
 	"context"
 	"errors"
+	"github.com/RomanAgaltsev/urlcut/internal/pkg/cert"
 	"log/slog"
 	"net/http"
 	"os"
@@ -148,7 +149,19 @@ func (a *App) runShortenerApp() error {
 	slog.Info("starting HTTP server", "addr", a.server.Addr)
 
 	// Запускаем HTTP сервер
-	if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	var err error
+	if a.cfg.EnableHTTPS {
+		slog.Info("creating certificate")
+		err = cert.CreateCertificate(cert.CertPEM, cert.PrivateKeyPEM)
+		if err != nil {
+			slog.Error("certificate creation", slog.String("error", err.Error()))
+			return err
+		}
+		err = a.server.ListenAndServeTLS(cert.CertPEM, cert.PrivateKeyPEM)
+	} else {
+		err = a.server.ListenAndServe()
+	}
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("HTTP server error", slog.String("error", err.Error()))
 		return err
 	}
