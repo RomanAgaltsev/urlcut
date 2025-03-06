@@ -215,6 +215,7 @@ func (r *DBRepository) DeleteURLs(ctx context.Context, urls []*model.URL) error 
 	return tx.Commit()
 }
 
+// GetStats возвращает из БД статистику по ссылкам и пользователям.
 func (r *DBRepository) GetStats(ctx context.Context) (*model.Stats, error) {
 	// Получаем из БД статистику по ссылкам и пользователям
 	statsQuery, err := backoff.RetryWithData(func() (queries.GetStatsRow, error) {

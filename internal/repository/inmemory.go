@@ -98,6 +98,7 @@ func (r *InMemoryRepository) DeleteURLs(_ context.Context, urls []*model.URL) er
 	return nil
 }
 
+// GetStats возвращает статистику по ссылкам и пользователям.
 func (r *InMemoryRepository) GetStats(ctx context.Context) (*model.Stats, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

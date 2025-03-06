@@ -192,8 +192,17 @@ func (s *Shortener) deleteURLs() {
 	}
 }
 
+// Stats возвращает статистику по ссылкам и пользователям.
 func (s *Shortener) Stats(ctx context.Context) (*model.StatsDTO, error) {
-	return nil, nil
+	stats, err := s.repository.GetStats(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.StatsDTO{
+		Urls:  stats.Urls,
+		Users: stats.Users,
+	}, nil
 }
 
 // Close закрывает репозиторий ссылок сокращателя.
