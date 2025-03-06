@@ -19,8 +19,8 @@ var (
 	ErrConflict = fmt.Errorf("data conflict")
 )
 
-// New создает и возвращает новый репозиторий в соответствии с переданной конфигурацией приложения.
-func New(cfg *config.Config) (interfaces.Repository, error) {
+// NewRepository создает и возвращает новый репозиторий в соответствии с переданной конфигурацией приложения.
+func NewRepository(cfg *config.Config) (interfaces.Repository, error) {
 	if cfg.DatabaseDSN == "" {
 		return NewInMemoryRepository(cfg.FileStoragePath), nil
 	}

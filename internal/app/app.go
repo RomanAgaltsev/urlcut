@@ -85,7 +85,7 @@ func (a *App) initLogger() error {
 
 // initShortener инициализирует сервис сокращателя ссылок, включая хранилище.
 func (a *App) initShortener() error {
-	repo, err := repository.New(a.cfg)
+	repo, err := repository.NewRepository(a.cfg)
 	if err != nil {
 		return err
 	}
