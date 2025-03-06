@@ -21,6 +21,7 @@ type Config struct {
 	DatabaseDSN     string `json:"database_dsn"`      // Строка соединения с БД
 	SecretKey       string `json:"secret_key"`        // Секретный ключ авторизации
 	EnableHTTPS     bool   `json:"enable_https"`      // Регулирует включение HTTPS на сервере
+	TrustedSubnet   string `json:"trusted_subnet"`    // Cтроковое представление бесклассовой адресации доверенной подсети
 	IDlength        int    `json:"id_length"`         // Длина идентификатора в сокращенном URL
 }
 
@@ -32,6 +33,7 @@ type configBuilder struct {
 	databaseDSN     string `env:"DATABASE_DSN"`
 	secretKey       string `env:"SECRET_KEY"`
 	enableHTTPS     bool   `env:"ENABLE_HTTPS"`
+	trustedSubnet   string `env:"TRUSTED_SUBNET"`
 	idLength        int
 }
 
@@ -48,6 +50,7 @@ func (cb *configBuilder) setDefaults() error {
 	cb.databaseDSN = ""
 	cb.secretKey = "secret"
 	cb.enableHTTPS = false
+	cb.trustedSubnet = ""
 	cb.idLength = 8
 
 	return nil
@@ -61,6 +64,7 @@ func (cb *configBuilder) setFlags() error {
 	flag.StringVar(&cb.databaseDSN, "d", cb.databaseDSN, "database connection string")
 	flag.StringVar(&cb.secretKey, "k", cb.secretKey, "secret authorization key")
 	flag.BoolVar(&cb.enableHTTPS, "s", cb.enableHTTPS, "enable HTTPS on server")
+	flag.StringVar(&cb.trustedSubnet, "t", cb.trustedSubnet, "trusted subnet")
 	flag.IntVar(&cb.idLength, "l", cb.idLength, "URL ID default length")
 	flag.Parse()
 
@@ -96,6 +100,9 @@ func (cb *configBuilder) setEnvs() error {
 			}
 			if fromFile.EnableHTTPS {
 				cb.enableHTTPS = fromFile.EnableHTTPS
+			}
+			if fromFile.TrustedSubnet != "" {
+				cb.trustedSubnet = fromFile.TrustedSubnet
 			}
 			if fromFile.IDlength != 0 {
 				cb.idLength = fromFile.IDlength
@@ -134,8 +141,13 @@ func (cb *configBuilder) setEnvs() error {
 	}
 
 	sk := os.Getenv("SECRET_KEY")
-	if dsn != "" {
+	if sk != "" {
 		cb.secretKey = sk
+	}
+
+	ts := os.Getenv("TRUSTED_SUBNET")
+	if ts != "" {
+		cb.secretKey = ts
 	}
 
 	return nil
@@ -150,6 +162,7 @@ func (cb *configBuilder) build() *Config {
 		DatabaseDSN:     cb.databaseDSN,
 		SecretKey:       cb.secretKey,
 		EnableHTTPS:     cb.enableHTTPS,
+		TrustedSubnet:   cb.trustedSubnet,
 		IDlength:        cb.idLength,
 	}
 }
