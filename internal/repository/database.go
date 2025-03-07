@@ -5,7 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	
+
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"github.com/jackc/pgerrcode"

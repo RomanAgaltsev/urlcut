@@ -4,12 +4,13 @@ package app
 import (
 	"context"
 	"errors"
-	"github.com/RomanAgaltsev/urlcut/internal/pkg/cert"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/RomanAgaltsev/urlcut/internal/pkg/cert"
 
 	"github.com/RomanAgaltsev/urlcut/internal/api/url"
 	"github.com/RomanAgaltsev/urlcut/internal/config"
