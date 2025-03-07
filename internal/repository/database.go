@@ -218,10 +218,9 @@ func (r *DBRepository) DeleteURLs(ctx context.Context, urls []*model.URL) error 
 // GetStats возвращает из БД статистику по ссылкам и пользователям.
 func (r *DBRepository) GetStats(ctx context.Context) (*model.Stats, error) {
 	// Получаем из БД статистику по ссылкам и пользователям
-	//	statsQuery, err := backoff.RetryWithData(func() (queries.GetStatsRow, error) {
-	//		return r.q.GetStats(ctx)
-	//	}, backoff.NewExponentialBackOff())
-	statsQuery, err := r.q.GetStats(ctx)
+	statsQuery, err := backoff.RetryWithData(func() (queries.GetStatsRow, error) {
+		return r.q.GetStats(ctx)
+	}, backoff.NewExponentialBackOff())
 	if err != nil {
 		return nil, err
 	}
