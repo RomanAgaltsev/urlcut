@@ -118,7 +118,6 @@ func TestDBRepositoryGet(t *testing.T) {
 		Base:   BaseURL,
 		ID:     urlID,
 		CorrID: "",
-		UID:    uid,
 	}
 
 	db, mock, err := sqlmock.New()
