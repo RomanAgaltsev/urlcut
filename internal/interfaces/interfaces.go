@@ -26,6 +26,9 @@ type Service interface {
 	// DeleteUserURLs удаляет URL пользователя по переданным идентификаторам сокращенных URL.
 	DeleteUserURLs(ctx context.Context, uid uuid.UUID, shortURLs *model.ShortURLsDTO) error
 
+	// Stats возвращает статистику по количеству сокращенных URL и пользователей.
+	Stats(ctx context.Context) (*model.StatsDTO, error)
+
 	// Close закрывает сервис. Используется в текущей реализации graceful shutdown.
 	Close() error
 }
@@ -43,6 +46,9 @@ type Repository interface {
 
 	// DeleteURLs удаляет в БД переданные URL.
 	DeleteURLs(ctx context.Context, urls []*model.URL) error
+
+	// GetStats возвращает из БД статистику по ссылкам и пользователям.
+	GetStats(ctx context.Context) (*model.Stats, error)
 
 	// Close - закрывает соединения с БД. Используется в текущей реализации graceful shutdown.
 	Close() error

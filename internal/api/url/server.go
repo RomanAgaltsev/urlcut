@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/jwtauth/v5"
 
 	"github.com/RomanAgaltsev/urlcut/internal/api/middleware"
@@ -46,10 +47,18 @@ func NewServer(shortener interfaces.Service, cfg *config.Config) (*http.Server, 
 	})
 	// -- идентификатор требуется
 	router.Group(func(r chi.Router) {
-		// Миддвале, проверяющая наличие идентификтара
+		// Миддлвале, проверяющая наличие идентификтара
 		r.Use(middleware.WithID(tokenAuth))
 
 		r.Delete("/api/user/urls", handlers.UserUrlsDelete)
+	})
+	// -- доступ только из доверенной подсети
+	router.Group(func(r chi.Router) {
+		// Миддлваре, устанавливающая в RemoteAddr запроса значение из заголовков "X-Real-IP" или "X-Forwarded-For"
+		r.Use(chimiddleware.RealIP)
+		r.Use(middleware.WithTrustedSubnet(cfg.TrustedSubnet))
+
+		r.Get("/api/internal/stats", handlers.Stats)
 	})
 
 	return &http.Server{
