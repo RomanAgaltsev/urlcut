@@ -99,7 +99,7 @@ func (r *DBRepository) Store(ctx context.Context, urls []*model.URL) (*model.URL
 				// Получаем данные конфликтного URL по оригинальному адресу при помощи retry операции
 				urlByLong, errgbl := backoff.RetryWithData(func() (queries.Url, error) {
 					return r.q.GetURLByLong(ctx, url.Long)
-				}, backoff.NewExponentialBackOff())
+				}, DefaultBackOff)
 				// Проверяем ошибку получения конфликтного URL
 				if errgbl != nil {
 					return ce, errgbl
@@ -115,7 +115,7 @@ func (r *DBRepository) Store(ctx context.Context, urls []*model.URL) (*model.URL
 		}
 
 		// Выполняем подготовленную операцию
-		conflError, err := backoff.RetryWithData(f, backoff.NewExponentialBackOff())
+		conflError, err := backoff.RetryWithData(f, DefaultBackOff)
 		if err != nil {
 			return nil, err
 		}
@@ -139,7 +139,7 @@ func (r *DBRepository) Get(ctx context.Context, id string) (*model.URL, error) {
 	// Получаем из БД данные URL при помощи retry операции
 	url, err := backoff.RetryWithData(func() (queries.Url, error) {
 		return r.q.GetURL(ctx, id)
-	}, backoff.NewExponentialBackOff())
+	}, DefaultBackOff)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (r *DBRepository) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]*model
 	// Получаем из БД URL по идентификатору пользователя при помощи retry операции
 	urlsQuery, err := backoff.RetryWithData(func() ([]queries.Url, error) {
 		return r.q.GetUserURLs(ctx, uid)
-	}, backoff.NewExponentialBackOff())
+	}, DefaultBackOff)
 	if err != nil {
 		return nil, err
 	}
@@ -172,12 +172,7 @@ func (r *DBRepository) GetUserURLs(ctx context.Context, uid uuid.UUID) ([]*model
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		default:
-			urls = append(urls, &model.URL{
-				Long: url.LongUrl,
-				Base: url.BaseUrl,
-				ID:   url.UrlID,
-				UID:  url.Uid,
-			})
+			urls = append(urls, &model.URL{Long: url.LongUrl, Base: url.BaseUrl, ID: url.UrlID, UID: url.Uid})
 		}
 	}
 
@@ -204,7 +199,7 @@ func (r *DBRepository) DeleteURLs(ctx context.Context, urls []*model.URL) error 
 				UrlID: url.ID,
 				Uid:   url.UID,
 			})
-		}, backoff.NewExponentialBackOff())
+		}, DefaultBackOff)
 
 		// Проверяем ошибку получения конфликтного URL
 		if err != nil {
@@ -224,7 +219,7 @@ func (r *DBRepository) GetStats(ctx context.Context) (*model.Stats, error) {
 			return queries.GetStatsRow{}, nil
 		}
 		return stats, err
-	}, backoff.NewExponentialBackOff())
+	}, DefaultBackOff)
 
 	if err != nil {
 		return nil, err

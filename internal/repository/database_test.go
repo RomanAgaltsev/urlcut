@@ -8,6 +8,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -46,11 +48,17 @@ func TestDBRepository(t *testing.T) {
 	mock.ExpectPrepare("(.*)SELECT(.*)")
 	mock.ExpectPrepare("(.*)SELECT(.*)")
 	mock.ExpectPrepare("(.*)SELECT(.*)")
+
 	mock.ExpectBegin()
 	mock.ExpectQuery("(.*)INSERT(.*)").
 		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(rowsIns)
 	mock.ExpectCommit()
+	mock.ExpectBegin()
+	mock.ExpectQuery("(.*)INSERT(.*)").
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnError(&pgconn.PgError{Code: pgerrcode.IntegrityConstraintViolation})
+	mock.ExpectRollback()
 	mock.ExpectQuery("(.*)SELECT(.*)").
 		WithArgs(sqlmock.AnyArg()).
 		WillReturnRows(rowsSel)
@@ -74,13 +82,9 @@ func TestDBRepository(t *testing.T) {
 	require.NoError(t, err)
 	assert.IsType(t, urlS, storedURLs)
 
-	urlG, err := dbRepository.Get(context.TODO(), urlID)
-	require.NoError(t, err)
-
-	assert.Equal(t, urlS.Long, urlG.Long)
-	assert.Equal(t, urlS.Base, urlG.Base)
-	assert.Equal(t, urlS.ID, urlG.ID)
-	assert.Equal(t, urlS.CorrID, urlG.CorrID)
+	storedURLs, err = dbRepository.Store(context.TODO(), []*model.URL{urlS})
+	assert.ErrorIs(t, err, ErrConflict)
+	assert.IsType(t, urlS, storedURLs)
 
 	userURLs, err := dbRepository.GetUserURLs(context.TODO(), uid)
 	require.NoError(t, err)
@@ -92,6 +96,59 @@ func TestDBRepository(t *testing.T) {
 	stats, err := dbRepository.GetStats(context.TODO())
 	assert.Equal(t, err, nil)
 	assert.IsType(t, &model.Stats{}, stats)
+
+	err = dbRepository.Close()
+	require.NoError(t, err)
+
+	err = mock.ExpectationsWereMet()
+	require.NoError(t, err)
+}
+
+func TestDBRepositoryGet(t *testing.T) {
+	const (
+		BaseURL = "http://localhost:8080"
+	)
+	longURL := fmt.Sprintf("https://%s.%s", random.String(20), random.String(3))
+	urlID := random.String(8)
+
+	uid, _ := uuid.NewRandom()
+
+	urlS := &model.URL{
+		Long:   longURL,
+		Base:   BaseURL,
+		ID:     urlID,
+		CorrID: "",
+		UID:    uid,
+	}
+
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+
+	rowsSel := sqlmock.NewRows([]string{"id", "long_url", "base_url", "url_id", "created_at", "uid", "is_deleted"}).
+		AddRow(1, longURL, BaseURL, urlID, time.Now(), uid, false)
+
+	mock.ExpectPrepare("(.*)UPDATE(.*)")
+	mock.ExpectPrepare("(.*)SELECT(.*)")
+	mock.ExpectPrepare("(.*)SELECT(.*)")
+	mock.ExpectPrepare("(.*)SELECT(.*)")
+
+	mock.ExpectQuery("(.*)SELECT(.*)").
+		WithArgs(sqlmock.AnyArg()).
+		WillReturnRows(rowsSel)
+
+	mock.ExpectClose()
+
+	dbRepository, err := NewDBRepository(db)
+	require.NoError(t, err)
+
+	urlG, err := dbRepository.Get(context.TODO(), urlID)
+	require.NoError(t, err)
+
+	assert.Equal(t, urlS.Long, urlG.Long)
+	assert.Equal(t, urlS.Base, urlG.Base)
+	assert.Equal(t, urlS.ID, urlG.ID)
+	assert.Equal(t, urlS.CorrID, urlG.CorrID)
 
 	err = dbRepository.Close()
 	require.NoError(t, err)
