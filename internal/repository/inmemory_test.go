@@ -51,6 +51,10 @@ func TestInMemoryRepository(t *testing.T) {
 	err = inMemoryRepository.DeleteURLs(context.TODO(), urls)
 	require.NoError(t, err)
 
+	stats, err := inMemoryRepository.GetStats(context.TODO())
+	require.NoError(t, err)
+	assert.IsType(t, &model.Stats{}, stats)
+
 	err = inMemoryRepository.Close()
 	require.NoError(t, err)
 }

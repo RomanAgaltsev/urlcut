@@ -5,7 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-
+	
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"github.com/jackc/pgerrcode"
@@ -219,8 +219,13 @@ func (r *DBRepository) DeleteURLs(ctx context.Context, urls []*model.URL) error 
 func (r *DBRepository) GetStats(ctx context.Context) (*model.Stats, error) {
 	// Получаем из БД статистику по ссылкам и пользователям
 	statsQuery, err := backoff.RetryWithData(func() (queries.GetStatsRow, error) {
-		return r.q.GetStats(ctx)
+		stats, err := r.q.GetStats(ctx)
+		if errors.Is(err, sql.ErrNoRows) {
+			return queries.GetStatsRow{}, nil
+		}
+		return stats, err
 	}, backoff.NewExponentialBackOff())
+
 	if err != nil {
 		return nil, err
 	}

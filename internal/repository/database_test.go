@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"testing"
 	"time"
@@ -91,8 +90,8 @@ func TestDBRepository(t *testing.T) {
 	require.NoError(t, err)
 
 	stats, err := dbRepository.GetStats(context.TODO())
-	assert.Equal(t, err, sql.ErrNoRows)
-	assert.Nil(t, stats)
+	assert.Equal(t, err, nil)
+	assert.IsType(t, &model.Stats{}, stats)
 
 	err = dbRepository.Close()
 	require.NoError(t, err)
