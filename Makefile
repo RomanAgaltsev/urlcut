@@ -2,6 +2,10 @@
 gen-mock:	# Generate mocks
 	mockgen -destination=internal/mocks/mock_repository.go -package=mocks github.com/RomanAgaltsev/urlcut/internal/interfaces Repository
 
+.PHONY: gen-buf
+gen-buf:	# Generate buf
+	buf generate
+
 .PHONY: lint
 lint:
 	golangci-lint run ./...
