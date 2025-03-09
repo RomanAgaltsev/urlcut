@@ -2,13 +2,22 @@
 gen-mock:	# Generate mocks
 	mockgen -destination=internal/mocks/mock_repository.go -package=mocks github.com/RomanAgaltsev/urlcut/internal/interfaces Repository
 
-.PHONY: gen-buf
-gen-buf:	# Generate buf
+.PHONY: buf-dep-upd
+buf-dep-upd:	
+	buf dep update
+
+.PHONY: buf-lint
+buf-lint:
+	buf lint
+
+.PHONY: buf-gen
+buf-gen:
 	buf generate
 
 .PHONY: lint
 lint:
 	golangci-lint run ./...
+	buf lint
 
 .PHONY: tidy
 tidy:	# Cleanup go.mod

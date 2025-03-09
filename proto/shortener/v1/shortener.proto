@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+option go_package = "github.com/RomanAgaltsev/urlcut/internal/api/grpc";
+
+package shortener.v1;
+
+import "buf/validate/validate.proto";
+
+service URLShortenerService {
+    rpc Shorten(ShortenRequest) returns (ShortenResponse);
+    rpc ShortenBatch(ShortenBatchRequest) returns (ShortenBatchResponse);
+    rpc Expand(ExpandRequest) returns (ExpandResponse);
+    rpc UserUrls(UserUrlsRequest) returns (UserUrlsResponse);
+    rpc DeleteUserUrls(DeleteUserUrlsRequest) returns (DeleteUserUrlsResponse);
+    rpc Stats(StatsRequest) returns (StatsResponse);
+}
+
+// Shorten
+message ShortenRequest {
+    string long_url = 1 [(buf.validate.field).required = true, (buf.validate.field).string.uri = true];
+}
+
+message ShortenResponse {
+    string short_url = 1;
+}
+
+// ShortenBatch
+message ShortenBatchRequest {
+    message ShortenBatchRequestItem {
+        string correlation_id = 1 [(buf.validate.field).required = true];
+        string original_url = 2 [(buf.validate.field).required = true];
+    }
+    repeated ShortenBatchRequestItem items = 1 [(buf.validate.field).repeated = {min_items: 1}];
+}
+
+message ShortenBatchResponse {
+    message ShortenBatchResponseItem {
+        string correlation_id = 1;
+        string short_url = 2;
+    }
+    repeated ShortenBatchResponseItem items = 1;
+}
+
+// Expand
+message ExpandRequest {
+    string short_url = 1 [(buf.validate.field).required = true];
+}
+
+message ExpandResponse {
+    string long_url = 1;
+}
+
+// UserUrls
+message UserUrlsRequest {
+
+}
+
+message UserUrlsResponse {
+
+}
+
+// DeleteUserUrls
+message DeleteUserUrlsRequest {
+
+}
+
+message DeleteUserUrlsResponse {
+
+}
+
+// Stats
+message StatsRequest {
+
+}
+
+message StatsResponse {
+
+}
