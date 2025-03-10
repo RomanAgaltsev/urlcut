@@ -10,12 +10,11 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/RomanAgaltsev/urlcut/internal/pkg/cert"
-
-	"github.com/RomanAgaltsev/urlcut/internal/api/url"
+	"github.com/RomanAgaltsev/urlcut/internal/api/http"
 	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/logger"
+	"github.com/RomanAgaltsev/urlcut/internal/pkg/cert"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
 	"github.com/RomanAgaltsev/urlcut/internal/services"
 )
