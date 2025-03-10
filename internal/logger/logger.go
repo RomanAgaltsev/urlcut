@@ -39,7 +39,7 @@ func Initialize() error {
 	}
 	defer func() { _ = logger.Sync() }()
 
-	slog.SetDefault(slog.New(zapslog.NewHandler(logger.Core(), nil)))
+	slog.SetDefault(slog.New(zapslog.NewHandler(logger.Core())))
 
 	return nil
 }

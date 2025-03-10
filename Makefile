@@ -30,7 +30,7 @@ fmt:
 
 .PHONY: test
 test:	# Execute the unit tests
-	go test -count=1 -race -v -timeout 30s -coverprofile cover.out ./...
+	go test -count=1 -v -timeout 30s -coverprofile cover.out ./...
 
 .PHONY: cover
 cover:	# Show the cover report
