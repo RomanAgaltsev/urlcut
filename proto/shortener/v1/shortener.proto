@@ -51,28 +51,29 @@ message ExpandResponse {
 }
 
 // UserUrls
-message UserUrlsRequest {
-
-}
+message UserUrlsRequest {}
 
 message UserUrlsResponse {
-
+    message UserUrlsResponseItem {
+        string short_url = 1;
+        string long_url = 2;
+    }
+    repeated UserUrlsResponseItem items = 1;
 }
 
 // DeleteUserUrls
 message DeleteUserUrlsRequest {
-
+    repeated string urls = 1 [(buf.validate.field).repeated = {min_items: 1}];
 }
 
 message DeleteUserUrlsResponse {
-
+    string result = 1;
 }
 
 // Stats
-message StatsRequest {
-
-}
+message StatsRequest {}
 
 message StatsResponse {
-
+    int64 urls = 1;
+    int64 users = 2;
 }
