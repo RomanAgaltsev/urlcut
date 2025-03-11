@@ -158,7 +158,6 @@ func (a *App) runShortenerApp() error {
 			err = cert.CreateCertificate(cert.CertPEM, cert.PrivateKeyPEM)
 			if err != nil {
 				slog.Error("certificate creation", slog.String("error", err.Error()))
-				//return err
 			}
 			err = a.serverHTTP.ListenAndServeTLS(cert.CertPEM, cert.PrivateKeyPEM)
 		} else {
@@ -166,7 +165,6 @@ func (a *App) runShortenerApp() error {
 		}
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("HTTP server error", slog.String("error", err.Error()))
-			//return err
 		}
 	}()
 
@@ -177,12 +175,10 @@ func (a *App) runShortenerApp() error {
 		listen, err := net.Listen("tcp", a.cfg.ServerGRPCPort)
 		if err != nil {
 			slog.Error("GRPC server error", slog.String("error", err.Error()))
-			//return err
 		}
 
 		if err := a.serverGRPC.Serve(listen); err != nil {
 			slog.Error("GRPC server serve error", slog.String("error", err.Error()))
-			//return err
 		}
 	}()
 
