@@ -20,6 +20,12 @@ const CertPEM string = "certs/cert.pem"
 // PrivateKeyPEM содержит имя файла приватного ключа TLS.
 const PrivateKeyPEM string = "certs/privatekey.pem"
 
+// certFType содержит тип файла сертификата TLS.
+const certFType string = "CERTIFICATE"
+
+// privateKeyFType содержит тип файла приватного ключа TLS.
+const privateKeyFType string = "RSA PRIVATE KEY"
+
 // CreateCertificate создает новый сертификат и приватный ключ TLS.
 func CreateCertificate(certFileName string, keyFileName string) error {
 	// создаём шаблон сертификата
@@ -58,12 +64,12 @@ func CreateCertificate(certFileName string, keyFileName string) error {
 
 	// сохраняем сертификат и ключ в формате PEM, который
 	// используется для хранения и обмена криптографическими ключами
-	err = writeCertFile(certFileName, "CERTIFICATE", certBytes)
+	err = writeCertFile(certFileName, certFType, certBytes)
 	if err != nil {
 		return err
 	}
 
-	err = writeCertFile(keyFileName, "RSA PRIVATE KEY", x509.MarshalPKCS1PrivateKey(privateKey))
+	err = writeCertFile(keyFileName, privateKeyFType, x509.MarshalPKCS1PrivateKey(privateKey))
 	if err != nil {
 		return err
 	}

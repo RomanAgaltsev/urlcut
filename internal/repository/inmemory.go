@@ -54,8 +54,8 @@ func (r *InMemoryRepository) Store(_ context.Context, urls []*model.URL) (*model
 
 // Get возвращает данные URL из in memory репозитория.
 func (r *InMemoryRepository) Get(_ context.Context, id string) (*model.URL, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
 	if url, ok := r.m[id]; ok {
 		return url, nil
@@ -66,6 +66,9 @@ func (r *InMemoryRepository) Get(_ context.Context, id string) (*model.URL, erro
 
 // GetUserURLs возвращает URL пользователя из репозитория.
 func (r *InMemoryRepository) GetUserURLs(_ context.Context, uid uuid.UUID) ([]*model.URL, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	// Создаем слайс для возврата ссылок пользователя
 	urls := make([]*model.URL, 0)
 
@@ -81,6 +84,9 @@ func (r *InMemoryRepository) GetUserURLs(_ context.Context, uid uuid.UUID) ([]*m
 
 // DeleteURLs удаляет URL пользователя из репозитория.
 func (r *InMemoryRepository) DeleteURLs(_ context.Context, urls []*model.URL) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	// Перебираем URL в цикле и устанавливаем пометки удаления
 	for _, url := range urls {
 		u, ok := r.m[url.ID]
@@ -90,6 +96,30 @@ func (r *InMemoryRepository) DeleteURLs(_ context.Context, urls []*model.URL) er
 	}
 
 	return nil
+}
+
+// GetStats возвращает статистику по ссылкам и пользователям.
+func (r *InMemoryRepository) GetStats(ctx context.Context) (*model.Stats, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	// Структура для возврата статистики
+	var stats model.Stats
+	// Количество ссылок
+	urls := 0
+	// Для подсчета пользователей имитируем множество
+	users := make(map[uuid.UUID]struct{})
+
+	// В цикле собираем статистику
+	for _, url := range r.m {
+		urls++
+		users[url.UID] = struct{}{}
+	}
+
+	stats.Urls = urls        // Количество идентификаторов сокращенных ссылок
+	stats.Users = len(users) // Количество различных ключей множества пользователей
+
+	return &stats, nil
 }
 
 // Close сохраняет данные из in memory репозитория в файловое хранилище.

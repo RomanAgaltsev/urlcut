@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
@@ -49,6 +50,7 @@ func newHelper(t *testing.T) *helper {
 		FileStoragePath: "",
 		DatabaseDSN:     "",
 		SecretKey:       "secret",
+		TrustedSubnet:   "192.168.1.0/24",
 		IDlength:        idLength,
 	}
 
@@ -509,6 +511,50 @@ func TestUserUrlsDeleteHandler(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, http.StatusAccepted, res.StatusCode())
+}
+
+func TestStatsHandler(t *testing.T) {
+	hlp := newHelper(t)
+	hlp.router.Use(chimiddleware.RealIP)
+	hlp.router.Use(middleware.WithTrustedSubnet(hlp.cfg.TrustedSubnet))
+	hlp.router.Get("/api/internal/stats", hlp.handlers.Stats)
+
+	httpSrv := httptest.NewServer(hlp.router)
+	defer httpSrv.Close()
+
+	u, _ := url.Parse(httpSrv.URL)
+	jar, _ := cookiejar.New(nil)
+	jar.SetCookies(u, []*http.Cookie{{
+		Name:  "jwt",
+		Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3NjU3YTI5OC0xNjMyLTQzMTUtYjc3Yi01N2QwYTFmYTFlYjQifQ.__0hZzB7EPGqGGR3o9xYsOx5ucWazs3ExB4pQ5bzjmw",
+		Path:  "/",
+	}})
+
+	httpc := resty.New().SetCookieJar(jar)
+
+	t.Run("[GET] [TrustedSubnetMiddleware] [192.168.1.1]", func(t *testing.T) {
+		req := httpc.R()
+		req.Method = http.MethodGet
+		req.URL = httpSrv.URL + "/api/internal/stats"
+		req.SetHeader("X-Real-IP", "192.168.1.1")
+
+		res, err := req.Send()
+		assert.NoError(t, err)
+
+		assert.Equal(t, http.StatusOK, res.StatusCode())
+	})
+
+	t.Run("[GET] [TrustedSubnetMiddleware] [168.192.1.1]", func(t *testing.T) {
+		req := httpc.R()
+		req.Method = http.MethodGet
+		req.URL = httpSrv.URL + "/api/internal/stats"
+		req.SetHeader("X-Real-IP", "168.192.1.1")
+
+		res, err := req.Send()
+		assert.NoError(t, err)
+
+		assert.Equal(t, http.StatusForbidden, res.StatusCode())
+	})
 }
 
 func TestLoggerMiddleWare(t *testing.T) {

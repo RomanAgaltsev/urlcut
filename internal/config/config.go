@@ -21,6 +21,8 @@ type Config struct {
 	DatabaseDSN     string `json:"database_dsn"`      // Строка соединения с БД
 	SecretKey       string `json:"secret_key"`        // Секретный ключ авторизации
 	EnableHTTPS     bool   `json:"enable_https"`      // Регулирует включение HTTPS на сервере
+	TrustedSubnet   string `json:"trusted_subnet"`    // Cтроковое представление бесклассовой адресации доверенной подсети
+	ServerGRPCPort  string `json:"server_grpc_port"`  // Порт GRPC сервера
 	IDlength        int    `json:"id_length"`         // Длина идентификатора в сокращенном URL
 }
 
@@ -32,6 +34,8 @@ type configBuilder struct {
 	databaseDSN     string `env:"DATABASE_DSN"`
 	secretKey       string `env:"SECRET_KEY"`
 	enableHTTPS     bool   `env:"ENABLE_HTTPS"`
+	trustedSubnet   string `env:"TRUSTED_SUBNET"`
+	serverGRPCPort  string `env:"SERVER_GRPC_PORT"`
 	idLength        int
 }
 
@@ -48,6 +52,8 @@ func (cb *configBuilder) setDefaults() error {
 	cb.databaseDSN = ""
 	cb.secretKey = "secret"
 	cb.enableHTTPS = false
+	cb.trustedSubnet = ""
+	cb.serverGRPCPort = ":9090"
 	cb.idLength = 8
 
 	return nil
@@ -61,6 +67,8 @@ func (cb *configBuilder) setFlags() error {
 	flag.StringVar(&cb.databaseDSN, "d", cb.databaseDSN, "database connection string")
 	flag.StringVar(&cb.secretKey, "k", cb.secretKey, "secret authorization key")
 	flag.BoolVar(&cb.enableHTTPS, "s", cb.enableHTTPS, "enable HTTPS on server")
+	flag.StringVar(&cb.trustedSubnet, "t", cb.trustedSubnet, "trusted subnet")
+	flag.StringVar(&cb.serverGRPCPort, "g", cb.serverGRPCPort, "GRPC server port")
 	flag.IntVar(&cb.idLength, "l", cb.idLength, "URL ID default length")
 	flag.Parse()
 
@@ -96,6 +104,12 @@ func (cb *configBuilder) setEnvs() error {
 			}
 			if fromFile.EnableHTTPS {
 				cb.enableHTTPS = fromFile.EnableHTTPS
+			}
+			if fromFile.TrustedSubnet != "" {
+				cb.trustedSubnet = fromFile.TrustedSubnet
+			}
+			if fromFile.ServerGRPCPort != "" {
+				cb.serverGRPCPort = fromFile.ServerGRPCPort
 			}
 			if fromFile.IDlength != 0 {
 				cb.idLength = fromFile.IDlength
@@ -134,8 +148,18 @@ func (cb *configBuilder) setEnvs() error {
 	}
 
 	sk := os.Getenv("SECRET_KEY")
-	if dsn != "" {
+	if sk != "" {
 		cb.secretKey = sk
+	}
+
+	ts := os.Getenv("TRUSTED_SUBNET")
+	if ts != "" {
+		cb.secretKey = ts
+	}
+
+	sgp := os.Getenv("SERVER_GRPC_PORT")
+	if sgp != "" {
+		cb.serverGRPCPort = sgp
 	}
 
 	return nil
@@ -150,6 +174,8 @@ func (cb *configBuilder) build() *Config {
 		DatabaseDSN:     cb.databaseDSN,
 		SecretKey:       cb.secretKey,
 		EnableHTTPS:     cb.enableHTTPS,
+		TrustedSubnet:   cb.trustedSubnet,
+		ServerGRPCPort:  cb.serverGRPCPort,
 		IDlength:        cb.idLength,
 	}
 }

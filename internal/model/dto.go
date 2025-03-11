@@ -35,4 +35,10 @@ type (
 	ShortURLsDTO struct {
 		IDs []string
 	}
+
+	// StatsDTO - структура со статистикой сокращенных ссылок и пользователей в сервисе.
+	StatsDTO struct {
+		Urls  int `json:"urls"`
+		Users int `json:"users"`
+	}
 )

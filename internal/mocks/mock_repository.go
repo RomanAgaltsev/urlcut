@@ -13,10 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
+	model "github.com/RomanAgaltsev/urlcut/internal/model"
 	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
-
-	model "github.com/RomanAgaltsev/urlcut/internal/model"
 )
 
 // MockRepository is a mock of Repository interface.
@@ -84,6 +83,21 @@ func (m *MockRepository) Get(ctx context.Context, id string) (*model.URL, error)
 func (mr *MockRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepository)(nil).Get), ctx, id)
+}
+
+// GetStats mocks base method.
+func (m *MockRepository) GetStats(ctx context.Context) (*model.Stats, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStats", ctx)
+	ret0, _ := ret[0].(*model.Stats)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStats indicates an expected call of GetStats.
+func (mr *MockRepositoryMockRecorder) GetStats(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStats", reflect.TypeOf((*MockRepository)(nil).GetStats), ctx)
 }
 
 // GetUserURLs mocks base method.

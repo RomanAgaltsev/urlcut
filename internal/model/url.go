@@ -20,3 +20,9 @@ type URL struct {
 func (u *URL) Short() string {
 	return fmt.Sprintf("%s/%s", u.Base, u.ID)
 }
+
+// Stats - структура со статистикой сокращенных ссылок и пользователей в сервисе.
+type Stats struct {
+	Urls  int // Количество сокращённых ссылок в сервисе
+	Users int // Количество пользователей в сервисе
+}

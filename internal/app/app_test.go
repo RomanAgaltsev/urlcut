@@ -23,6 +23,8 @@ func TestApp(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	err = application.server.Shutdown(ctx)
+	err = application.serverHTTP.Shutdown(ctx)
 	require.NoError(t, err)
+
+	application.serverGRPC.Stop()
 }

@@ -24,3 +24,7 @@ UPDATE urls
 SET is_deleted = TRUE
 WHERE url_id = $1
   AND uid = $2;
+
+-- name: GetStats :one
+SELECT COUNT(url_id) AS urls, COUNT(DISTINCT uid) AS users
+FROM urls;

@@ -112,6 +112,17 @@ func TestShortener(t *testing.T) {
 	err = shortener.DeleteUserURLs(context.TODO(), uid, &shortURLs)
 	require.NoError(t, err)
 
+	mockRepo.EXPECT().
+		GetStats(context.TODO()).
+		Return(&model.Stats{
+			Urls:  0,
+			Users: 0,
+		}, nil).
+		Times(1)
+
+	_, err = shortener.Stats(context.TODO())
+	require.NoError(t, err)
+
 	time.Sleep(11 * time.Second)
 
 	err = shortener.Close()
