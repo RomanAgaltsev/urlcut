@@ -33,11 +33,13 @@ type ShortenerService interface {
 
 var _ ShortenerService = (*services.Shortener)(nil)
 
+// ShortenerServer релизует GRPC сервер для сокращателя ссылок.
 type ShortenerServer struct {
 	pb.UnimplementedURLShortenerServiceServer
 	shortener ShortenerService
 }
 
+// NewShortenerServer создает GRPC сервер сокращателя ссылок.
 func NewShortenerServer(shortener ShortenerService) *ShortenerServer {
 	return &ShortenerServer{
 		shortener: shortener,
