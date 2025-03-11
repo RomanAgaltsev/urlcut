@@ -148,6 +148,44 @@ func (a *App) runShortenerApp() error {
 	// Сигнал прерывания
 	signal.Notify(quit, os.Interrupt)
 
+	// Запускаем HTTP сервер
+	go func() {
+		slog.Info("starting HTTP server", "addr", a.serverHTTP.Addr)
+
+		var err error
+		if a.cfg.EnableHTTPS {
+			slog.Info("creating certificate")
+			err = cert.CreateCertificate(cert.CertPEM, cert.PrivateKeyPEM)
+			if err != nil {
+				slog.Error("certificate creation", slog.String("error", err.Error()))
+				//return err
+			}
+			err = a.serverHTTP.ListenAndServeTLS(cert.CertPEM, cert.PrivateKeyPEM)
+		} else {
+			err = a.serverHTTP.ListenAndServe()
+		}
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("HTTP server error", slog.String("error", err.Error()))
+			//return err
+		}
+	}()
+
+	// Запускаем GRPC сервер
+	go func() {
+		slog.Info("starting GRPC server", "addr", a.cfg.ServerGRPCPort)
+
+		listen, err := net.Listen("tcp", a.cfg.ServerGRPCPort)
+		if err != nil {
+			slog.Error("GRPC server error", slog.String("error", err.Error()))
+			//return err
+		}
+
+		if err := a.serverGRPC.Serve(listen); err != nil {
+			slog.Error("GRPC server serve error", slog.String("error", err.Error()))
+			//return err
+		}
+	}()
+
 	// Graceful Shutdown выполняем в горутине
 	go func() {
 		<-quit
@@ -171,40 +209,6 @@ func (a *App) runShortenerApp() error {
 
 		close(done)
 	}()
-
-	// Запускаем HTTP сервер
-	slog.Info("starting HTTP server", "addr", a.serverHTTP.Addr)
-
-	var err error
-	if a.cfg.EnableHTTPS {
-		slog.Info("creating certificate")
-		err = cert.CreateCertificate(cert.CertPEM, cert.PrivateKeyPEM)
-		if err != nil {
-			slog.Error("certificate creation", slog.String("error", err.Error()))
-			return err
-		}
-		err = a.serverHTTP.ListenAndServeTLS(cert.CertPEM, cert.PrivateKeyPEM)
-	} else {
-		err = a.serverHTTP.ListenAndServe()
-	}
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		slog.Error("HTTP server error", slog.String("error", err.Error()))
-		return err
-	}
-
-	// Запускаем GRPC сервер
-	slog.Info("starting GRPC server", "addr", a.cfg.ServerGRPCPort)
-
-	listen, err := net.Listen("tcp", a.cfg.ServerGRPCPort)
-	if err != nil {
-		slog.Error("GRPC server error", slog.String("error", err.Error()))
-		return err
-	}
-
-	if err := a.serverGRPC.Serve(listen); err != nil {
-		slog.Error("GRPC server serve error", slog.String("error", err.Error()))
-		return err
-	}
 
 	<-done
 	slog.Info("HTTP server stopped")
