@@ -7,7 +7,7 @@ import (
 
 	"github.com/RomanAgaltsev/urlcut/internal/model"
 	"github.com/RomanAgaltsev/urlcut/internal/services"
-	shortenerv1 "github.com/RomanAgaltsev/urlcut/pkg/shortener/v1"
+	pb "github.com/RomanAgaltsev/urlcut/pkg/shortener/v1"
 )
 
 // ShortenerService интерфейс сервиса сокращения URL.
@@ -34,7 +34,7 @@ type ShortenerService interface {
 var _ ShortenerService = (*services.Shortener)(nil)
 
 type ShortenerServer struct {
-	shortenerv1.UnimplementedURLShortenerServiceServer
+	pb.UnimplementedURLShortenerServiceServer
 	shortener ShortenerService
 }
 

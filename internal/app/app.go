@@ -4,26 +4,31 @@ package app
 import (
 	"context"
 	"errors"
+	"google.golang.org/grpc"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/RomanAgaltsev/urlcut/internal/api/http"
+	apigrpc "github.com/RomanAgaltsev/urlcut/internal/api/grpc"
+	apihttp "github.com/RomanAgaltsev/urlcut/internal/api/http"
 	"github.com/RomanAgaltsev/urlcut/internal/config"
 	"github.com/RomanAgaltsev/urlcut/internal/interfaces"
 	"github.com/RomanAgaltsev/urlcut/internal/logger"
 	"github.com/RomanAgaltsev/urlcut/internal/pkg/cert"
 	"github.com/RomanAgaltsev/urlcut/internal/repository"
 	"github.com/RomanAgaltsev/urlcut/internal/services"
+	pb "github.com/RomanAgaltsev/urlcut/pkg/shortener/v1"
 )
 
 // App является структурой всего приложения.
 type App struct {
-	cfg       *config.Config     // конфигурация приложения
-	server    *http.Server       // http-сервер
-	shortener interfaces.Service // сервис сокращателя ссылок
+	cfg        *config.Config     // конфигурация приложения
+	serverHTTP *http.Server       // http-сервер
+	serverGRPC *grpc.Server       // grpc-сервер
+	shortener  interfaces.Service // сервис сокращателя ссылок
 }
 
 // New создает новое приложение.
@@ -55,6 +60,12 @@ func New() (*App, error) {
 
 	// Инициализация HTTP сервера
 	err = app.initHTTPServer()
+	if err != nil {
+		return nil, err
+	}
+
+	// Инициализация GRPC сервера
+	err = app.initGRPCServer()
 	if err != nil {
 		return nil, err
 	}
@@ -102,11 +113,23 @@ func (a *App) initShortener() error {
 
 // initHTTPServer инициализирует HTTP сервер.
 func (a *App) initHTTPServer() error {
-	server, err := url.NewServer(a.shortener, a.cfg)
+	server, err := apihttp.NewServer(a.shortener, a.cfg)
 	if err != nil {
 		return err
 	}
-	a.server = server
+	a.serverHTTP = server
+
+	return nil
+}
+
+// initGRPCServer инициализирует GRPC сервер.
+func (a *App) initGRPCServer() error {
+	shortenerServer := apigrpc.NewShortenerServer(a.shortener)
+
+	server := grpc.NewServer()
+	pb.RegisterURLShortenerServiceServer(server, shortenerServer)
+
+	a.serverGRPC = server
 
 	return nil
 }
@@ -134,9 +157,12 @@ func (a *App) runShortenerApp() error {
 		defer cancel()
 
 		// Выключаем HTTP сервер
-		if err := a.server.Shutdown(ctx); err != nil {
+		if err := a.serverHTTP.Shutdown(ctx); err != nil {
 			slog.Error("HTTP server shutdown error", slog.String("error", err.Error()))
 		}
+
+		slog.Info("shutting down GRPC server")
+		a.serverGRPC.GracefulStop()
 
 		// Выключаем сервис сокращателя, включая закрытие хранилища
 		if err := a.shortener.Close(); err != nil {
@@ -146,9 +172,9 @@ func (a *App) runShortenerApp() error {
 		close(done)
 	}()
 
-	slog.Info("starting HTTP server", "addr", a.server.Addr)
-
 	// Запускаем HTTP сервер
+	slog.Info("starting HTTP server", "addr", a.serverHTTP.Addr)
+
 	var err error
 	if a.cfg.EnableHTTPS {
 		slog.Info("creating certificate")
@@ -157,16 +183,31 @@ func (a *App) runShortenerApp() error {
 			slog.Error("certificate creation", slog.String("error", err.Error()))
 			return err
 		}
-		err = a.server.ListenAndServeTLS(cert.CertPEM, cert.PrivateKeyPEM)
+		err = a.serverHTTP.ListenAndServeTLS(cert.CertPEM, cert.PrivateKeyPEM)
 	} else {
-		err = a.server.ListenAndServe()
+		err = a.serverHTTP.ListenAndServe()
 	}
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("HTTP server error", slog.String("error", err.Error()))
 		return err
 	}
 
+	// Запускаем GRPC сервер
+	slog.Info("starting GRPC server", "addr", a.cfg.ServerGRPCPort)
+
+	listen, err := net.Listen("tcp", a.cfg.ServerGRPCPort)
+	if err != nil {
+		slog.Error("GRPC server error", slog.String("error", err.Error()))
+		return err
+	}
+
+	if err := a.serverGRPC.Serve(listen); err != nil {
+		slog.Error("GRPC server serve error", slog.String("error", err.Error()))
+		return err
+	}
+
 	<-done
 	slog.Info("HTTP server stopped")
+	slog.Info("GRPC server stopped")
 	return nil
 }
